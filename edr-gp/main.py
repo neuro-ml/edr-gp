@@ -9,6 +9,13 @@ from GPy.models import GPRegression, GPClassification
 
 
 class BaseGP(BaseEstimator):
+    
+    def __init__(self, kernels=None, kernel_options=None, Y_metadata=None,
+                 mean_function=None):
+        self.kernels = kernels
+        self.kernel_options = kernel_options
+        self.Y_metadata = Y_metadata
+        self.mean_function = mean_function
 
     def fit(self, X, y, **opt_kws):
         X, y = self._check_input(X, y)
@@ -25,8 +32,7 @@ class BaseGP(BaseEstimator):
         X, y = check_X_y(X, y, accept_sparse=False)
         if self._estimator_type == 'classifier':
             check_classification_targets(y)
-        if y.ndim == 1:
-            y = y[:, np.newaxis]
+        y = y[:, np.newaxis]
         return X, y
 
     def _make_kernel(self, X):
@@ -76,12 +82,11 @@ class GaussianProcessRegressor(BaseGP, RegressorMixin):
 
     def __init__(self, kernels=None, kernel_options=None, Y_metadata=None,
                  normalizer=None, noise_var=1.0, mean_function=None):
-        self.kernels = kernels
-        self.kernel_options = kernel_options
-        self.Y_metadata = Y_metadata
         self.normalizer = normalizer
         self.noise_var = noise_var
-        self.mean_function = mean_function
+
+        super(GaussianProcessRegressor, self).__init__(kernels,
+            kernel_options, Y_metadata, mean_function)
 
     def _get_model(self, X, y, kernel):
         return GPRegression(X, y, kernel, self.Y_metadata, self.normalizer,
@@ -89,13 +94,6 @@ class GaussianProcessRegressor(BaseGP, RegressorMixin):
 
 
 class GaussianProcessClassifier(BaseGP, ClassifierMixin):
-
-    def __init__(self, kernels=None, kernel_options=None, Y_metadata=None,
-                 mean_function=None):
-        self.kernels = kernels
-        self.kernel_options = kernel_options
-        self.Y_metadata = Y_metadata
-        self.mean_function = mean_function
 
     def _get_model(self, X, y, kernel):
         return GPClassification(X, y, kernel, self.Y_metadata,
@@ -114,6 +112,7 @@ class GaussianProcessesEDR(BaseGP):
         X, y = self._check_input(X, y)
         # Initialization
         n_features = X.shape[1]
+        self.projection_ = None
         if self.n_components is None:
             n_components = n_features
         else:
@@ -123,11 +122,9 @@ class GaussianProcessesEDR(BaseGP):
             method = PCA()
         else:
             method = self.method
-
-        if self.step is None:
-            step = None
-        else:
-            step = self.step
+        _check_method(method)
+        
+        step = self.step
 
         if step is not None:
             X_projected = X.copy()
@@ -145,12 +142,7 @@ class GaussianProcessesEDR(BaseGP):
         return self.model_.predict(self.project(X))
 
     def single_fit(self, method, X, y, ndim, **opt_kws):
-        if hasattr(method, 'n_components'):
-            method.n_components = ndim
-        else:
-            raise AttributeError('The classifier does not expose '
-                                 '"n_components" attribute')
-
+        method.n_components = ndim
         self.estimator.fit(X, y, **opt_kws)
         grad = self.estimator.predict_gradient(X)
         method.fit(grad)
@@ -169,3 +161,9 @@ class GaussianProcessesEDR(BaseGP):
         if self.projection_ is None:
             raise RuntimeError('Fit the model before projection')
         return np.dot(X, self.projection_)
+    
+    def _check_method(method):
+        if not hasattr(method, 'n_components'):
+            raise AttributeError('The classifier does not expose '
+                                 '"n_components" attribute')
+        
