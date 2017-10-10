@@ -1,0 +1,38 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  build: &test-template
+    docker:
+      - image: circleci/python:3.6.1
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            python -m venv venv
+            . venv/bin/activate
+            pip install numpy
+            pip install matplotlib
+            pip install -r requirements.txt
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            export PYTHONPATH=$PWD:$PYTHONPATH
+            python edrgp/tests/smoke.py
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
+  # test-3.5:
+  #   <<: *test-template
+  #   docker:
+  #     - image: circleci/python:3.5
+  # test-2.7:
+  #   <<: *test-template
+  #   docker:
+  #     - image: circleci/python:2.7
+          
