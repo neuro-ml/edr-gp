@@ -4,7 +4,7 @@
 #
 version: 2
 jobs:
-  test-3.6: &test-template
+  build: &test-template
     docker:
       - image: circleci/python:3.6.1
     steps:
@@ -12,24 +12,25 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            python3 -m venv venv
+            python -m venv venv
             . venv/bin/activate
+            pip install numpy
             pip install -r requirements.txt
       - run:
           name: run tests
           command: |
             . venv/bin/activate
-            python examples/regression.py
+            python edrgp/tests/smoke.py
 
       - store_artifacts:
           path: test-reports
           destination: test-reports
-  test-3.5:
-    <<: *test-template
-    docker:
-      - image: circleci/python:3.5
-  test-2.7:
-    <<: *test-template
-    docker:
-      - image: circleci/python:2.7
+  # test-3.5:
+  #   <<: *test-template
+  #   docker:
+  #     - image: circleci/python:3.5
+  # test-2.7:
+  #   <<: *test-template
+  #   docker:
+  #     - image: circleci/python:2.7
           
