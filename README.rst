@@ -2,7 +2,7 @@
 
 |CircleCI|_ |Zenhub|_ 
 
-.. |CircleCI| image:: https://circleci.com/gh/neuro-ml/edr-gp.svg?style=svg
+.. |CircleCI| image:: https://circleci.com/gh/neuro-ml/edr-gp/tree/master.svg?style=shield&circle-token=:circle-token
 .. _CircleCI: https://circleci.com/gh/neuro-ml/edr-gp
 
 .. |Zenhub| image:: https://raw.githubusercontent.com/ZenHubIO/support/master/zenhub-badge.png
