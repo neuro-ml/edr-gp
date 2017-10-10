@@ -18,7 +18,6 @@ class _BaseEDR(TransformerMixin):
     def __init__(self, estimator, dr_transformer):
         self.estimator = estimator
         self.dr_transformer = dr_transformer
-        self.components_ = None
 
     def _check_estimator_fitted(self):
         check_is_fitted(self.estimator, 'estimator_')
@@ -48,7 +47,7 @@ class _BaseEDR(TransformerMixin):
     def inverse_transform(self, X):
         check_is_fitted(self, 'components_')
         X = check_array(X)
-        return np.dot(X, np.linalg.pinv(self.components_))
+        return np.dot(X, np.linalg.pinv(self.components_).T)
 
     def _set_components_(self, components):
         self.components_ = deepcopy(components)

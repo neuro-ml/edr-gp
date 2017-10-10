@@ -73,5 +73,3 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
     def predict_gradient(self, X):
         return self.estimator_.predictive_gradients(X)[0][:, :, 0]
-
-
