@@ -1,6 +1,6 @@
 import numpy as np
-from .regression import GaussianProcessRegressor
-from .edr import EffectiveDimensionalityReduction
+from edrgp.regression import GaussianProcessRegressor
+from edrgp.edr import EffectiveDimensionalityReduction
 from sklearn.feature_selection import mutual_info_regression
 from sklearn.decomposition import PCA
 
