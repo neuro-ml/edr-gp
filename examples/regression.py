@@ -13,7 +13,7 @@ MARKER_SIZE = 12
 CMAP = sns.diverging_palette(220, 20, s=99, as_cmap=True)
 
 
-def get_data(sample_size=500, noise_std=0.05):
+def get_data(sample_size=500, noise_std=0.03):
     # generate covariance mat
     U = np.array([[1, 1], [-1, 1]])
     S = np.diag([1, 0.3])
@@ -39,71 +39,69 @@ def plot_data(X, y):
     plt.show()
 
 
-def plot_direction(comp):
-    x1, x2 = comp[0] * 10
+def plot_dr_component(X, y, dr, title):
+    plt.figure(figsize=[12, 5])
+    plt.subplot(1, 2, 1)
+    # plot dataset
+    plt.plot(*X.T, '.', label='Training sample')
+    plt.xlabel('Feature 1', fontsize=16)
+    plt.ylabel('Feature 2', fontsize=16)
+    # plot direction (preserving figure limits)
     xlim = plt.xlim()
     ylim = plt.ylim()
+    x1, x2 = dr.components_[0] * max(*xlim, *ylim)
     plt.plot([-x1, x1], [-x2, x2], lw=4, label='The selected combination')
     plt.xlim(xlim)
     plt.ylim(ylim)
 
-
-def plot_projections(X, comp):
+    # add 3 artificial points
+    X_sample = np.array([[-2, 1], [-1.3, 2.3], [2.3, -0.7]])
+    y_sample = func(X_sample)
+    # plot these points and their pro
     labels = ['Original features', 'Features after projection', 'Projection']
     for i, (x, marker) in enumerate(zip(X, MARKERS)):
-        x_proj = np.dot(np.dot(x[np.newaxis, :], comp.T), comp)[0]
+        x_proj = dr.inverse_transform(dr.transform(x[np.newaxis, :]))[0]
         plt.plot(*x, marker, c=PALETTE[3], label=labels[0], ms=MARKER_SIZE)
         plt.plot(*x_proj, marker, c=PALETTE[2], label=labels[1],
                  ms=MARKER_SIZE)
         plt.plot([x[0], x_proj[0]], [x[1], x_proj[1]], '--', c=PALETTE[2],
                  label=labels[2])
         labels = ['_', '_', '_']
-
-
-def plot_dr_component(X, y, dr, title):
-    comp = dr.components_
-    plt.figure(figsize=[12, 5])
-    plt.subplot(1, 2, 1)
-    plt.plot(*X.T, '.', label='Training sample')
-    plt.xlabel('Feature 1', fontsize=16)
-    plt.ylabel('Feature 2', fontsize=16)
-    plot_direction(comp)
-    X_sample = np.array([[-2, 1], [-1.3, 2.3], [2.3, -0.7]])
-    plot_projections(X_sample, comp)
     plt.legend(loc='best')
-    X_proj = np.dot(X, comp.T)
+
+    # add a plot with projected data
     plt.subplot(1, 2, 2)
     plt.suptitle(title, fontsize=18)
-    plt.scatter(X_proj, y, c=y, cmap=CMAP)
+    plt.scatter(dr.transform(X), y)
     for i in range(len(X_sample)):
-        plt.plot(np.dot(X_sample[i:i + 1], comp.T), func(X_sample[i:i + 1]),
-                 marker=MARKERS[i], ms=MARKER_SIZE, c=PALETTE[3])
+        plt.plot(dr.transform(X_sample[i:i + 1]), y_sample[i:i + 1],
+                 marker=MARKERS[i], ms=MARKER_SIZE, c=PALETTE[2])
     plt.xlabel('The found linear combination ', fontsize=16)
     plt.ylabel('The target variable', fontsize=16)
-    plt.show()
-    mi = mutual_info_regression(X_proj, y)[0]
+    mi = mutual_info_regression(dr.transform(X), y)[0]
     txt = ('Mutual information beween the target and '
            'the found linear combination is {:.3f}'.format(mi))
     print(txt)
 
 
 def plot_explained_variance(X, y):
+    # build full PCA to estimate all variance ratios
     pca = PCA(n_components=2)
     pca.fit(X)
     pca_variance = pca.explained_variance_ratio_
-
-    edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           PCA(n_components=2), True)
+    # the same operation for EDR
+    edr = EffectiveDimensionalityReduction(
+        GaussianProcessRegressor(), PCA(n_components=2), True)
     edr.fit(X, y)
     edr_variance = edr.dr_transformer.explained_variance_ratio_
-
+    # bars for PCA
     plt.figure(figsize=[12, 5])
     plt.subplot(1, 2, 1)
     plt.title('PCA - explained features variance')
     sns.barplot(x=[1, 2], y=pca_variance)
     plt.ylim([0, 1])
     plt.xlabel('Component number')
-
+    # bars for EDR-GP
     plt.subplot(1, 2, 2)
     plt.title('EDR-GP - explained functional variance')
     sns.barplot(x=[1, 2], y=edr_variance)
@@ -120,8 +118,8 @@ if __name__ == "__main__":
     plot_dr_component(X, y, pca, 'Principal Component Analysis')
 
     # plot EDR-GP
-    edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           PCA(n_components=1), True)
+    edr = EffectiveDimensionalityReduction(
+        GaussianProcessRegressor(), PCA(n_components=1), True)
     edr.fit(X, y)
     plot_dr_component(X, y, edr, 'Effective dimensionality reduction')
 
