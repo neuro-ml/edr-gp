@@ -3,9 +3,14 @@ from setuptools import setup
 # To use a consistent encoding
 from codecs import open
 from os import path
+from pip.req import parse_requirements
+
+# read dependencies from requirements.txt
+install_reqs = parse_requirements('requirements.txt', session=False)
+reqs = [str(ir.req) for ir in install_reqs]
+
 
 here = path.abspath(path.dirname(__file__))
-
 # Get the long description from the README file
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
@@ -33,6 +38,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.5',
     ],
-    packages=['edr-gp'],
-    install_requires=['GPy, scikit-learn'],
+    packages=['edrgp'],
+    install_requires=reqs,
 )
