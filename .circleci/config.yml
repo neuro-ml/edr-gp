@@ -14,7 +14,8 @@ jobs:
           command: |
             python -m venv venv
             . venv/bin/activate
-            pip install numpy, matplotlib
+            pip install numpy
+            pip install matplotlib
             pip install -r requirements.txt
       - run:
           name: run tests
