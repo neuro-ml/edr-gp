@@ -7,7 +7,6 @@ jobs:
   test-3.6: &test-template
     docker:
       - image: circleci/python:3.6.1
-    working_directory: ~/repo
     steps:
       - checkout
       - run:
@@ -20,7 +19,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            python manage.py test
+            python examples/regression.py
 
       - store_artifacts:
           path: test-reports
