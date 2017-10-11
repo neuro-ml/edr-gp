@@ -11,7 +11,7 @@
 .. |PyPi| image:: https://badge.fury.io/py/edr-gp.svg
 .. _PyPi: https://badge.fury.io/py/edr-gp
 
-.. |Zenhub| image:: https://raw.githubusercontent.com/ZenHubIO/support/master/zenhub-badge.png
+.. |Zenhub| image:: https://raw.githubusercontent.com/ZenHubIO/support/master/zenhub-badge.svg
 .. _Zenhub: https://zenhub.com
 
 edr-gp
