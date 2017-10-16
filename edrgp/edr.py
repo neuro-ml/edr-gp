@@ -52,6 +52,11 @@ class _BaseEDR(TransformerMixin):
     def _set_components_(self, components):
         self.components_ = deepcopy(components)
 
+    @property
+    def feature_importances_(self):
+        check_is_fitted(self, 'components_')
+        return self.components_
+
 
 class EffectiveDimensionalityReduction(_BaseEDR):
 
@@ -77,6 +82,7 @@ class EffectiveDimensionalityReduction(_BaseEDR):
         X_preprocessed = sc.fit_transform(X)
         # initialize self.components_
         self.components_ = np.diag(1 / sc.scale_)
+        self._reverse_scaling_ = np.diag(sc.scale_)
         # note that X will be centered during training to improve
         # robustness of GP models.
         # the transform step will be a pure linear map without a translation
@@ -93,3 +99,8 @@ class EffectiveDimensionalityReduction(_BaseEDR):
         self.components_ = (
             deepcopy(components) if not hasattr(self, 'components_')
             else np.dot(components, self.components_))
+
+    @property
+    def feature_importances_(self):
+        check_is_fitted(self, 'components_')
+        return np.dot(self.components_, self._reverse_scaling_)
