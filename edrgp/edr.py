@@ -10,7 +10,6 @@ from sklearn.utils.validation import check_is_fitted
 class _BaseEDR(TransformerMixin):
     """Base class for Effective Dimensionality Reduction.
     It performs a single step of dimensionality reduction.
-
     Warning: This class should not be used directly.
     Use derived classes instead.
     """
@@ -22,8 +21,8 @@ class _BaseEDR(TransformerMixin):
     def _check_estimator_fitted(self):
         check_is_fitted(self.estimator, 'estimator_')
 
-    def _check_dr_transformer(self):
-        if not hasattr(self.dr_transformer, 'components_'):
+    def _check_transformer(self, transformer):
+        if not hasattr(transformer, 'components_'):
             raise AttributeError('The transformer does not expose '
                                  '"components_" attribute')
 
@@ -35,7 +34,7 @@ class _BaseEDR(TransformerMixin):
 
         grad = self.estimator.predict_gradient(X)
         self.dr_transformer.fit(grad)
-        self._check_dr_transformer()
+        self._check_transformer(self.dr_transformer)
         self._set_components_(self.dr_transformer.components_)
         return self
 
@@ -56,9 +55,9 @@ class _BaseEDR(TransformerMixin):
 class EffectiveDimensionalityReduction(_BaseEDR):
 
     def __init__(self, estimator, dr_transformer, normalize=True,
-                 preprocess_by_pca=False, **pca_kwargs):
+                 preprocessor=None):
         self.normalize = normalize
-        self.preprocess_by_pca = preprocess_by_pca
+        self.preprocessor = preprocessor
         self.pca_kwargs = pca_kwargs
         super(EffectiveDimensionalityReduction, self).__init__(
             estimator, dr_transformer)
@@ -70,8 +69,8 @@ class EffectiveDimensionalityReduction(_BaseEDR):
 
     def _fit_preprocessing(self, X, transform=True):
         if not self.normalize:
-            if self.preprocess_by_pca:
-                mes = 'To apply PCA prerpocessing, normalize should be True'
+            if self.preprocessor is not None:
+                mes = 'To apply prerpocessing, normalize should be True'
                 raise ValueError(mes)
             return X
         sc = StandardScaler()
@@ -82,11 +81,12 @@ class EffectiveDimensionalityReduction(_BaseEDR):
         # robustness of GP models.
         # the transform step will be a pure linear map without a translation
 
-        if self.preprocess_by_pca:
-            pca = PCA(**self.pca_kwargs)
-            X_preprocessed = pca.fit(X_preprocessed)
+        if self.preprocessor is not None:
+            preprocessor = self.preprocessor
+            _check_transformer(preprocessor)
+            X_preprocessed = preprocessor.fit(X_preprocessed)
             # update self.components_
-            self._set_components_(pca.components_)
+            self._set_components_(preprocessor.components_)
         return X_preprocessed if transform else None
 
     def _set_components_(self, components):
