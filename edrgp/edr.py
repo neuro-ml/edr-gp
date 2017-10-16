@@ -1,8 +1,7 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_array
-from sklearn.base import TransformerMixin
-from sklearn.decomposition import PCA
+from sklearn.base import TransformerMixin, clone
 from copy import deepcopy
 from sklearn.utils.validation import check_is_fitted
 
@@ -19,7 +18,8 @@ class _BaseEDR(TransformerMixin):
         self.dr_transformer = dr_transformer
 
     def _check_estimator_fitted(self):
-        check_is_fitted(self.estimator, 'estimator_')
+        check_is_fitted(self, 'estimator_')
+        check_is_fitted(self.estimator_, 'estimator_')
 
     def _check_transformer(self, transformer):
         if not hasattr(transformer, 'components_'):
@@ -30,12 +30,13 @@ class _BaseEDR(TransformerMixin):
         if y is None:
             self._check_estimator_fitted()
         else:
-            self.estimator.fit(X, y, **opt_kws)
-
-        grad = self.estimator.predict_gradient(X)
-        self.dr_transformer.fit(grad)
-        self._check_transformer(self.dr_transformer)
-        self._set_components_(self.dr_transformer.components_)
+            self.estimator_ = clone(self.estimator)
+            self.estimator_.fit(X, y, **opt_kws)
+        grad = self.estimator_.predict_gradient(X)
+        self.dr_transformer_ = clone(self.dr_transformer)
+        self.dr_transformer_.fit(grad)
+        self._check_transformer(self.dr_transformer_)
+        self._set_components_(self.dr_transformer_.components_)
         return self
 
     def transform(self, X):
@@ -58,7 +59,6 @@ class EffectiveDimensionalityReduction(_BaseEDR):
                  preprocessor=None):
         self.normalize = normalize
         self.preprocessor = preprocessor
-        self.pca_kwargs = pca_kwargs
         super(EffectiveDimensionalityReduction, self).__init__(
             estimator, dr_transformer)
 
@@ -82,11 +82,11 @@ class EffectiveDimensionalityReduction(_BaseEDR):
         # the transform step will be a pure linear map without a translation
 
         if self.preprocessor is not None:
-            preprocessor = self.preprocessor
-            _check_transformer(preprocessor)
-            X_preprocessed = preprocessor.fit(X_preprocessed)
+            self.preprocessor_ = clone(self.preprocessor)
+            X_preprocessed = self.preprocessor_.fit_transform(X_preprocessed)
+            self._check_transformer(self.preprocessor_)
             # update self.components_
-            self._set_components_(preprocessor.components_)
+            self._set_components_(self.preprocessor_.components_)
         return X_preprocessed if transform else None
 
     def _set_components_(self, components):
