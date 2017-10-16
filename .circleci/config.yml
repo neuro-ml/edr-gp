@@ -17,13 +17,15 @@ jobs:
             pip install numpy
             pip install matplotlib
             pip install -r requirements.txt
+            pip install pytest-cov
+            pip install codecov
       - run:
           name: run tests
           command: |
             . venv/bin/activate
             export PYTHONPATH=$PWD:$PYTHONPATH
-            python edrgp/tests/smoke.py
-
+            py.test --cov=./
+            codecov
       - store_artifacts:
           path: test-reports
           destination: test-reports

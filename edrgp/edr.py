@@ -1,8 +1,7 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_array
-from sklearn.base import TransformerMixin
-from sklearn.decomposition import PCA
+from sklearn.base import TransformerMixin, clone
 from copy import deepcopy
 from sklearn.utils.validation import check_is_fitted
 
@@ -10,7 +9,6 @@ from sklearn.utils.validation import check_is_fitted
 class _BaseEDR(TransformerMixin):
     """Base class for Effective Dimensionality Reduction.
     It performs a single step of dimensionality reduction.
-
     Warning: This class should not be used directly.
     Use derived classes instead.
     """
@@ -20,10 +18,11 @@ class _BaseEDR(TransformerMixin):
         self.dr_transformer = dr_transformer
 
     def _check_estimator_fitted(self):
-        check_is_fitted(self.estimator, 'estimator_')
+        check_is_fitted(self, 'estimator_')
+        check_is_fitted(self.estimator_, 'estimator_')
 
-    def _check_dr_transformer(self):
-        if not hasattr(self.dr_transformer, 'components_'):
+    def _check_transformer(self, transformer):
+        if not hasattr(transformer, 'components_'):
             raise AttributeError('The transformer does not expose '
                                  '"components_" attribute')
 
@@ -31,12 +30,13 @@ class _BaseEDR(TransformerMixin):
         if y is None:
             self._check_estimator_fitted()
         else:
-            self.estimator.fit(X, y, **opt_kws)
-
-        grad = self.estimator.predict_gradient(X)
-        self.dr_transformer.fit(grad)
-        self._check_dr_transformer()
-        self._set_components_(self.dr_transformer.components_)
+            self.estimator_ = clone(self.estimator)
+            self.estimator_.fit(X, y, **opt_kws)
+        grad = self.estimator_.predict_gradient(X)
+        self.dr_transformer_ = clone(self.dr_transformer)
+        self.dr_transformer_.fit(grad)
+        self._check_transformer(self.dr_transformer_)
+        self._set_components_(self.dr_transformer_.components_)
         return self
 
     def transform(self, X):
@@ -52,14 +52,18 @@ class _BaseEDR(TransformerMixin):
     def _set_components_(self, components):
         self.components_ = deepcopy(components)
 
+    @property
+    def feature_importances_(self):
+        check_is_fitted(self, 'components_')
+        return self.components_
+
 
 class EffectiveDimensionalityReduction(_BaseEDR):
 
     def __init__(self, estimator, dr_transformer, normalize=True,
-                 preprocess_by_pca=False, **pca_kwargs):
+                 preprocessor=None):
         self.normalize = normalize
-        self.preprocess_by_pca = preprocess_by_pca
-        self.pca_kwargs = pca_kwargs
+        self.preprocessor = preprocessor
         super(EffectiveDimensionalityReduction, self).__init__(
             estimator, dr_transformer)
 
@@ -70,26 +74,33 @@ class EffectiveDimensionalityReduction(_BaseEDR):
 
     def _fit_preprocessing(self, X, transform=True):
         if not self.normalize:
-            if self.preprocess_by_pca:
-                mes = 'To apply PCA prerpocessing, normalize should be True'
+            if self.preprocessor is not None:
+                mes = 'To apply prerpocessing, normalize should be True'
                 raise ValueError(mes)
             return X
         sc = StandardScaler()
         X_preprocessed = sc.fit_transform(X)
         # initialize self.components_
         self.components_ = np.diag(1 / sc.scale_)
+        self._reverse_scaling_ = np.diag(sc.scale_)
         # note that X will be centered during training to improve
         # robustness of GP models.
         # the transform step will be a pure linear map without a translation
 
-        if self.preprocess_by_pca:
-            pca = PCA(**self.pca_kwargs)
-            X_preprocessed = pca.fit(X_preprocessed)
+        if self.preprocessor is not None:
+            self.preprocessor_ = clone(self.preprocessor)
+            X_preprocessed = self.preprocessor_.fit_transform(X_preprocessed)
+            self._check_transformer(self.preprocessor_)
             # update self.components_
-            self._set_components_(pca.components_)
+            self._set_components_(self.preprocessor_.components_)
         return X_preprocessed if transform else None
 
     def _set_components_(self, components):
         self.components_ = (
             deepcopy(components) if not hasattr(self, 'components_')
             else np.dot(components, self.components_))
+
+    @property
+    def feature_importances_(self):
+        check_is_fitted(self, 'components_')
+        return np.dot(self.components_, self._reverse_scaling_)

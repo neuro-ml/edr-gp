@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from edrgp.regression import GaussianProcessRegressor
 from edrgp.edr import EffectiveDimensionalityReduction
@@ -21,7 +22,7 @@ def func(X):
     return np.tanh((X[:, 0] + X[:, 1]) * 0.5)
 
 
-if __name__ == "__main__":
+def test_smoke():
     X, y = get_data()
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
                                            PCA(n_components=1), True)
