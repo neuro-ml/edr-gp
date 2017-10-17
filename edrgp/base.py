@@ -18,22 +18,30 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         self.estimator_ = None
 
     def fit(self, X, y, **opt_kws):
-        X, y = self._check_input(X, y)
+        X, y = self._check_data(X, y)
 
         kernel = self._make_kernel(X)
         self.estimator_ = self._get_model(X, y, kernel)
+        self.n_features_ = X.shape[1]
 
         opt_kws.setdefault('messages', False)
         opt_kws.setdefault('max_iters', 1000)
         self.estimator_.optimize(**opt_kws)
         return self
 
-    def _check_input(self, X, y):
+    def _check_data(self, X, y):
         X, y = check_X_y(X, y, accept_sparse=False)
         if self._estimator_type == 'classifier':
             check_classification_targets(y)
         y = y[:, np.newaxis]
         return X, y
+
+    def _check_input(self, X):
+        X = check_array(X, accept_sparse=False)
+        if X.shape[1] != self.n_features_:
+            raise ValueError("X has {} features per sample; expecting {}"
+                             .format(X.shape[1], self.n_features_))
+        return X
 
     def _make_kernel(self, X):
         # kernel will be initiated as 'rbf' in model automatically
@@ -63,13 +71,15 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         pass
 
     def predict(self, X):
-        X = check_array(X, accept_sparse=False)
+        X = self._check_input(X)
         y_pred = self.estimator_.predict(X)[0][:, 0]
         assert_all_finite(y_pred)
         return y_pred
 
     def predict_variance(self, X):
+        X = self._check_input(X)
         return self.estimator_.predict(X)[1]
 
     def predict_gradient(self, X):
+        X = self._check_input(X)
         return self.estimator_.predictive_gradients(X)[0][:, :, 0]

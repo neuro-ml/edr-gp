@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from sklearn.utils import check_array
+from sklearn.utils import check_array, check_X_y
 from sklearn.base import TransformerMixin, clone
 from copy import deepcopy
 from sklearn.utils.validation import check_is_fitted
@@ -27,17 +27,22 @@ class _BaseEDR(TransformerMixin):
                                  '"components_" attribute')
 
     def fit(self, X, y=None, **opt_kws):
-        if y is None:
-            self._check_estimator_fitted()
-        else:
+        X, y = check_X_y(X, y, accept_sparse=False)
+        if y is not None:
             self.estimator_ = clone(self.estimator)
             self.estimator_.fit(X, y, **opt_kws)
-        grad = self.estimator_.predict_gradient(X)
+        grad = self.get_estimator_gradients(X)
         self.dr_transformer_ = clone(self.dr_transformer)
         self.dr_transformer_.fit(grad)
         self._check_transformer(self.dr_transformer_)
         self._set_components_(self.dr_transformer_.components_)
         return self
+
+    def get_estimator_gradients(self, X):
+        self._check_estimator_fitted()
+        X = check_array(X)
+        grad = self.estimator_.predict_gradient(X)
+        return grad
 
     def transform(self, X):
         check_is_fitted(self, 'components_')
