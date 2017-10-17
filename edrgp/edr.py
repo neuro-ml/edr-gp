@@ -17,10 +17,6 @@ class _BaseEDR(TransformerMixin):
         self.estimator = estimator
         self.dr_transformer = dr_transformer
 
-    def _check_estimator_fitted(self):
-        check_is_fitted(self, 'estimator_')
-        check_is_fitted(self.estimator_, 'estimator_')
-
     def _check_transformer(self, transformer):
         if not hasattr(transformer, 'components_'):
             raise AttributeError('The transformer does not expose '
@@ -39,8 +35,8 @@ class _BaseEDR(TransformerMixin):
         return self
 
     def get_estimator_gradients(self, X):
-        self._check_estimator_fitted()
         X = check_array(X)
+        check_is_fitted(self, 'estimator_')
         grad = self.estimator_.predict_gradient(X)
         return grad
 
@@ -73,21 +69,45 @@ class EffectiveDimensionalityReduction(_BaseEDR):
             estimator, dr_transformer)
 
     def fit(self, X, y=None, **opt_kws):
-        X = self._fit_preprocessing(X)
+        X = self._preprocessing_fit(X)
         super(EffectiveDimensionalityReduction, self).fit(X, y, **opt_kws)
         return self
 
-    def _fit_preprocessing(self, X, transform=True):
+    def get_estimator_gradients(self, X):
+        X = self._preprocessing_transform(X)
+        check_is_fitted(self, 'estimator_')
+        grad = self.estimator_.predict_gradient(X)
+        if self.preprocessor is not None:
+            check_is_fitted(self, 'preprocessor_')
+            grad = np.dot(grad, self.preprocessor_.components_)
+        return grad
+
+        # X = check_array(X)
+        # check_is_fitted(self, 'estimator_')
+        # grad = self.estimator_.predict_gradient(X)
+        # return grad
+
+    def _preprocessing_transform(self, X):
+        X = check_array(X)
+        if self.normalize is True:
+            check_is_fitted(self, 'scaler_')
+            X = self.scaler_.transform(X)
+        if self.preprocessor is not None:
+            check_is_fitted(self, 'preprocessor_')
+            X = self.preprocessor_.transform(X)
+        return X
+
+    def _preprocessing_fit(self, X, transform=True):
         if not self.normalize:
             if self.preprocessor is not None:
                 mes = 'To apply prerpocessing, normalize should be True'
                 raise ValueError(mes)
             return X
-        sc = StandardScaler()
-        X_preprocessed = sc.fit_transform(X)
+        self.scaler_ = StandardScaler()
+        X_preprocessed = self.scaler_.fit_transform(X)
         # initialize self.components_
-        self.components_ = np.diag(1 / sc.scale_)
-        self._reverse_scaling_ = np.diag(sc.scale_)
+        self.components_ = np.diag(1 / self.scaler_.scale_)
+        self._reverse_scaling_ = np.diag(self.scaler_.scale_)
         # note that X will be centered during training to improve
         # robustness of GP models.
         # the transform step will be a pure linear map without a translation

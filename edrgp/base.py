@@ -1,6 +1,6 @@
 import numpy as np
-from sklearn.utils import (check_X_y, assert_all_finite, check_array,
-                           check_is_fitted)
+from sklearn.utils import check_X_y, assert_all_finite, check_array
+from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.base import BaseEstimator
 from copy import deepcopy
