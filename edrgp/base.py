@@ -1,5 +1,6 @@
 import numpy as np
-from sklearn.utils import check_X_y, assert_all_finite, check_array
+from sklearn.utils import (check_X_y, assert_all_finite, check_array,
+                           check_is_fitted)
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.base import BaseEstimator
 from copy import deepcopy
@@ -70,16 +71,21 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
     def _get_model(self, X, y, kenrel):
         pass
 
-    def predict(self, X):
+    def _check_predict(self, X):
         X = self._check_input(X)
+        check_is_fitted(self, 'estimator_')
+        return X
+
+    def predict(self, X):
+        X = self._check_predict(X)
         y_pred = self.estimator_.predict(X)[0][:, 0]
         assert_all_finite(y_pred)
         return y_pred
 
     def predict_variance(self, X):
-        X = self._check_input(X)
+        X = self._check_predict(X)
         return self.estimator_.predict(X)[1]
 
     def predict_gradient(self, X):
-        X = self._check_input(X)
+        X = self._check_predict(X)
         return self.estimator_.predictive_gradients(X)[0][:, :, 0]
