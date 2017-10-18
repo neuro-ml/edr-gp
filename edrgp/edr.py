@@ -27,15 +27,19 @@ class _BaseEDR(TransformerMixin):
         if y is not None:
             self.estimator_ = clone(self.estimator)
             self.estimator_.fit(X, y, **opt_kws)
+        # TODO: fix the bug with not initialized estimator_ if y is none
         grad = self.get_estimator_gradients(X)
         self.dr_transformer_ = clone(self.dr_transformer)
         self.dr_transformer_.fit(grad)
         self._check_transformer(self.dr_transformer_)
-        self._set_components_(self.dr_transformer_.components_)
+        self._components_ = deepcopy(self.dr_transformer_.components_)
         return self
 
     def get_estimator_gradients(self, X):
         X = check_array(X)
+        return self._get_estimator_gradients(X)
+
+    def _get_estimator_gradients(self, X, prepocess=True):
         check_is_fitted(self, 'estimator_')
         grad = self.estimator_.predict_gradient(X)
         return grad
@@ -50,13 +54,14 @@ class _BaseEDR(TransformerMixin):
         X = check_array(X)
         return np.dot(X, np.linalg.pinv(self.components_).T)
 
-    def _set_components_(self, components):
-        self.components_ = deepcopy(components)
-
     @property
     def feature_importances_(self):
         check_is_fitted(self, 'components_')
         return self.components_
+
+    @property
+    def components_(self):
+        return self._components_
 
 
 class EffectiveDimensionalityReduction(_BaseEDR):
@@ -74,7 +79,12 @@ class EffectiveDimensionalityReduction(_BaseEDR):
         return self
 
     def get_estimator_gradients(self, X):
-        X = self._preprocessing_transform(X)
+        X = check_array(X)
+        return self._get_estimator_gradients(X, True)
+
+    def _get_estimator_gradients(self, X, prepocess=False):
+        if prepocess:
+            X = self._preprocessing_transform(X)
         check_is_fitted(self, 'estimator_')
         grad = self.estimator_.predict_gradient(X)
         if self.preprocessor is not None:
@@ -82,10 +92,28 @@ class EffectiveDimensionalityReduction(_BaseEDR):
             grad = np.dot(grad, self.preprocessor_.components_)
         return grad
 
-        # X = check_array(X)
-        # check_is_fitted(self, 'estimator_')
-        # grad = self.estimator_.predict_gradient(X)
-        # return grad
+    def _preprocessing_fit(self, X, transform=True):
+        if not self.normalize:
+            if self.preprocessor is not None:
+                mes = 'To apply prerpocessing, normalize should be True'
+                raise ValueError(mes)
+            return X
+        self.scaler_ = StandardScaler()
+        X_preprocessed = self.scaler_.fit_transform(X)
+        # initialize self.components_
+        self._scaling_ = np.diag(1 / self.scaler_.scale_)
+        self._reverse_scaling_ = np.diag(self.scaler_.scale_)
+        # note that X will be centered during training to improve
+        # robustness of GP models.
+        # the transform step will be a pure linear map without a translation
+
+        if self.preprocessor is not None:
+            self.preprocessor_ = clone(self.preprocessor)
+            X_preprocessed = self.preprocessor_.fit_transform(X_preprocessed)
+            self._check_transformer(self.preprocessor_)
+            # update self.components_
+            self._preprocessing_ = self.preprocessor_.components_
+        return X_preprocessed if transform else None
 
     def _preprocessing_transform(self, X):
         X = check_array(X)
@@ -97,29 +125,6 @@ class EffectiveDimensionalityReduction(_BaseEDR):
             X = self.preprocessor_.transform(X)
         return X
 
-    def _preprocessing_fit(self, X, transform=True):
-        if not self.normalize:
-            if self.preprocessor is not None:
-                mes = 'To apply prerpocessing, normalize should be True'
-                raise ValueError(mes)
-            return X
-        self.scaler_ = StandardScaler()
-        X_preprocessed = self.scaler_.fit_transform(X)
-        # initialize self.components_
-        self.components_ = np.diag(1 / self.scaler_.scale_)
-        self._reverse_scaling_ = np.diag(self.scaler_.scale_)
-        # note that X will be centered during training to improve
-        # robustness of GP models.
-        # the transform step will be a pure linear map without a translation
-
-        if self.preprocessor is not None:
-            self.preprocessor_ = clone(self.preprocessor)
-            X_preprocessed = self.preprocessor_.fit_transform(X_preprocessed)
-            self._check_transformer(self.preprocessor_)
-            # update self.components_
-            self._set_components_(self.preprocessor_.components_)
-        return X_preprocessed if transform else None
-
     def _set_components_(self, components):
         self.components_ = (
             deepcopy(components) if not hasattr(self, 'components_')
@@ -129,3 +134,12 @@ class EffectiveDimensionalityReduction(_BaseEDR):
     def feature_importances_(self):
         check_is_fitted(self, 'components_')
         return np.dot(self.components_, self._reverse_scaling_)
+
+    @property
+    def components_(self):
+        components = self._components_
+        if self.preprocessor is not None:
+            components = np.dot(components, self._preprocessing_)
+        if self.normalize is True:
+            components = np.dot(components, self._scaling_)
+        return components
