@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from edrgp.regression import GaussianProcessRegressor
 from edrgp.edr import EffectiveDimensionalityReduction
+from edrgp.datasets import get_gaussian_inputs, get_tanh_targets
 from sklearn.feature_selection import mutual_info_regression
 from sklearn.decomposition import PCA
 sns.set()
@@ -13,20 +14,18 @@ MARKER_SIZE = 12
 CMAP = sns.diverging_palette(220, 20, s=99, as_cmap=True)
 
 
-def get_data(sample_size=500, noise_std=0.03):
-    # generate covariance mat
-    U = np.array([[1, 1], [-1, 1]])
-    S = np.diag([1, 0.3])
-    cov = np.dot(np.dot(U, S), U.T)
-    # generate centered inputs
-    X = np.random.multivariate_normal([0, 0], cov, 500)
+def get_2d_data():
+    '''Returns a simple 2D dataset'''
+    X = get_gaussian_inputs(
+        eig_values=[1, 0.3], sample_size=500,
+        eig_vectors=np.array([[1, 1], [-1, 1]]))
     X -= X.mean(0)
-    y = func(X) + noise_std * np.random.randn(sample_size)
+    y = get_targets(X)
     return X, y
 
 
-def func(X):
-    return np.tanh((X[:, 0] + X[:, 1]) * 0.5)
+def get_targets(X, **kwargs):
+    return get_tanh_targets(X, [0.5, 0.5], **kwargs)
 
 
 def plot_data(X, y):
@@ -36,7 +35,6 @@ def plot_data(X, y):
     plt.title('The dataset')
     plt.xlabel('Feature 1', fontsize=16)
     plt.ylabel('Feature 2', fontsize=16)
-    plt.show()
 
 
 def plot_dr_component(X, y, dr, title):
@@ -56,10 +54,10 @@ def plot_dr_component(X, y, dr, title):
 
     # add 3 artificial points
     X_sample = np.array([[-2, 1], [-1.3, 2.3], [2.3, -0.7]])
-    y_sample = func(X_sample)
-    # plot these points and their pro
+    y_sample = get_targets(X_sample, noise_std=0)
+    # plot these points and their projections
     labels = ['Original features', 'Features after projection', 'Projection']
-    for i, (x, marker) in enumerate(zip(X, MARKERS)):
+    for i, (x, marker) in enumerate(zip(X_sample, MARKERS)):
         x_proj = dr.inverse_transform(dr.transform(x[np.newaxis, :]))[0]
         plt.plot(*x, marker, c=PALETTE[3], label=labels[0], ms=MARKER_SIZE)
         plt.plot(*x_proj, marker, c=PALETTE[2], label=labels[1],
@@ -93,7 +91,7 @@ def plot_explained_variance(X, y):
     edr = EffectiveDimensionalityReduction(
         GaussianProcessRegressor(), PCA(n_components=2), True)
     edr.fit(X, y)
-    edr_variance = edr.dr_transformer.explained_variance_ratio_
+    edr_variance = edr.dr_transformer_.explained_variance_ratio_
     # bars for PCA
     plt.figure(figsize=[12, 5])
     plt.subplot(1, 2, 1)
@@ -109,7 +107,7 @@ def plot_explained_variance(X, y):
 
 
 if __name__ == "__main__":
-    X, y = get_data()
+    X, y = get_2d_data()
     plot_data(X, y)
 
     # plot DR
