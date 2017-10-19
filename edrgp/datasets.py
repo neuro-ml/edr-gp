@@ -28,13 +28,3 @@ def get_tanh_targets(X, coefs, bias=0, noise_std=0.05):
     y = np.tanh(np.dot(X, coefs) + bias)
     y += + noise_std * np.random.randn(X.shape[0])
     return y
-
-
-def get_2d_data():
-    # generate centered inputs
-    X = get_gaussian_inputs(
-        eig_values=[1, 0.3], sample_size=500,
-        eig_vectors=np.array([[1, 1], [-1, 1]]))
-    X -= X.mean(0)
-    y = get_tanh_targets(X, [0.5, 0.5])
-    return X, y
