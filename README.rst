@@ -1,6 +1,6 @@
 .. -*- mode: rst -*-
 
-|CircleCI|_ |Zenhub|_ 
+|CircleCI|_ |Codecov|_ |PyPi|_ |Zenhub|_ 
 
 .. |CircleCI| image:: https://circleci.com/gh/neuro-ml/edr-gp/tree/master.svg?style=shield&circle-token=:circle-token
 .. _CircleCI: https://circleci.com/gh/neuro-ml/edr-gp
@@ -11,7 +11,7 @@
 .. |PyPi| image:: https://badge.fury.io/py/edr-gp.svg
 .. _PyPi: https://badge.fury.io/py/edr-gp
 
-.. |Zenhub| image:: https://raw.githubusercontent.com/ZenHubIO/support/master/zenhub-badge.png
+.. |Zenhub| image:: https://img.shields.io/badge/Shipping_faster_with-ZenHub-5e60ba.svg?style=flat-square
 .. _Zenhub: https://zenhub.com
 
 edr-gp
