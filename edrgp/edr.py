@@ -17,11 +17,11 @@ class BaseEDR(TransformerMixin):
             raise AttributeError('The transformer does not expose '
                                  '"components_" attribute')
 
-    def fit(self, X, y=None, **opt_kws):
+    def fit(self, X, y=None, method='optimize', **opt_kws):
         X, y = check_X_y(X, y, accept_sparse=False)
         if y is not None:
             self.estimator_ = clone(self.estimator)
-            self.estimator_.fit(X, y, **opt_kws)
+            self.estimator_.fit(X, y, method, **opt_kws)
         elif not hasattr(self, 'estimator_'):
             self.estimator_ = clone(self.estimator)
             # we will check later that the estimator is properly fitted
@@ -67,9 +67,9 @@ class EffectiveDimensionalityReduction(BaseEDR):
         super(EffectiveDimensionalityReduction, self).__init__(
             estimator, dr_transformer)
 
-    def fit(self, X, y=None, **opt_kws):
+    def fit(self, X, y=None, method='optimize', **opt_kws):
         X = self._preprocessing_fit(X)
-        super(EffectiveDimensionalityReduction, self).fit(X, y, **opt_kws)
+        super(EffectiveDimensionalityReduction, self).fit(X, y, method, **opt_kws)
         if self.normalize is True:
             self.components_ = np.dot(self.components_, self._scaling_)
         return self
