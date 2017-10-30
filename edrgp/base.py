@@ -18,7 +18,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         self.mean_function = mean_function
         self.estimator_ = None
 
-    def fit(self, X, y, **opt_kws):
+    def fit(self, X, y, method='optimize', **opt_kws):
         X, y = self._check_data(X, y)
 
         kernel = self._make_kernel(X)
@@ -27,7 +27,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         opt_kws.setdefault('messages', False)
         opt_kws.setdefault('max_iters', 1000)
-        self.estimator_.optimize(**opt_kws)
+        getattr(self.estimator_, method)(**opt_kws)
         return self
 
     def _check_data(self, X, y):
