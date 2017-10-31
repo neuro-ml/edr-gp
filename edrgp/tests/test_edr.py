@@ -42,7 +42,7 @@ def test_translation(normalize):
     edr2 = deepcopy(edr)
     edr2.fit(X, y)
     components_no_shift = edr2.components_
-    assert np.allclose(components_shift, components_no_shift)
+    assert np.allclose(components_shift, components_no_shift, rtol=1e-3)
 
 
 @pytest.mark.parametrize("mean", [[0, 0, 0, 0], [10, -10, 100, -100]])
@@ -66,4 +66,4 @@ def test_preprocess(mean):
                                            PCA(n_components=2))
     edr.fit(X, y)
     components_no_shift = edr.components_
-    assert np.allclose(components_shift, components_no_shift)
+    assert np.allclose(components_shift, components_no_shift, rtol=1e-3)
