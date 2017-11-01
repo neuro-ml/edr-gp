@@ -1,4 +1,4 @@
-"""Base class for estimators from GPy to use them as sklearn estimators"""
+"""Base class for estimators from `GPy` to use them as sklearn estimators"""
 
 import numpy as np
 from sklearn.utils import check_X_y, assert_all_finite, check_array
@@ -17,8 +17,8 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
     Parameters
     ----------
     kernels : str or list of str, optional
-        Kernel for GPy model.
-        If string, that kernel should be in GPy.kern.
+        Kernel for `GPy` model.
+        If string, that kernel should be in `GPy.kern`.
         If list of str, the sum of kernels is used.
         Default="RBF".
     kernel_options : dict or list of dict, optional
@@ -33,7 +33,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
     Attributes
     ----------
     estimator_ : object
-        GPy estimator fitted to data.
+        `GPy` estimator fitted to data.
     n_features_ : int
         Number of features in fitted data.
     """
@@ -50,12 +50,12 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         Parameters
         ----------
-        X : array-like of shape [n_samples, n_features]
+        X : array-like, shape (n_samples, n_features)
             Training set.
-        y : array-like of shape [n_samples]
+        y : array-like, shape (n_samples)
             Target values.
         method : {'optimize', 'optimize_restarts'}, optional
-            Invokes passed method to fit GPy model. 
+            Invokes passed method to fit `GPy` model. 
             For 'optimize_restarts' perform random restarts of the
             model, and set the model to the best.
 
@@ -81,15 +81,15 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
+        X : array-like, shape (n_samples, n_features)
             Training set.
-        y : array-like, shape = [n_samples]
+        y : array-like, shape (n_samples)
             Target values.
 
         Returns
         -------
-        X : ndarray, shape = [n_samples, n_features]
-        y : ndarray, shape = [n_samples, 1]
+        X : ndarray, shape (n_samples, n_features)
+        y : ndarray, shape (n_samples, 1)
         """
         X, y = check_X_y(X, y, accept_sparse=False)
         if self._estimator_type == 'classifier':
@@ -102,12 +102,12 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
+        X : array-like, shape (n_samples, n_features)
             Test points.
 
         Returns
         -------
-        X : ndarray, shape = [n_samples, n_features]
+        X : ndarray, shape (n_samples, n_features)
         """
         X = check_array(X, accept_sparse=False)
         if X.shape[1] != self.n_features_:
@@ -116,12 +116,12 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         return X
 
     def _make_kernel(self):
-        """Create kernel for GPy model.
+        """Create kernel for `GPy` model.
 
         Returns
         -------
         kernel : object
-            Returns GPy kernel.
+            Returns `GPy` kernel.
         """
 
         # kernel will be initiated as 'RBF' in model automatically
@@ -155,12 +155,12 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
+        X : array-like, shape (n_samples, n_features)
             Testing data.
 
         Returns
         -------
-        X : ndarray, shape = [n_samples, n_features]
+        X : ndarray, shape (n_samples, n_features)
         """
         X = self._check_input(X)
         check_is_fitted(self, 'estimator_')
@@ -171,7 +171,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
+        X : array-like, shape (n_samples, n_features)
             Testing points.
 
         Returns
@@ -193,7 +193,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
+        X : array-like, shape (n_samples, n_features)
             Testing points.
 
         Returns
@@ -210,12 +210,12 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
+        X : array-like, shape (n_samples, n_features)
             Testing points.
         
         Returns
         -------
-        grads : ndarray, shape = [n_samples, n_features]
+        grads : ndarray, shape (n_samples, n_features)
             Returns the gradients of the sample.
         """
         X = self._check_predict(X)

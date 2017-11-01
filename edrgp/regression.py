@@ -1,4 +1,4 @@
-"""Classes for regression based on GPy regression"""
+"""Classes for regression based on `GPy` regression"""
 
 from sklearn.base import RegressorMixin
 from GPy.models import GPRegression
@@ -6,13 +6,13 @@ from .base import _BaseGP
 
 
 class GaussianProcessRegressor(_BaseGP, RegressorMixin):
-    """Gaussian Process Regressor based on GPy regressor
+    """Gaussian Process Regressor based on `GPy` regressor.
 
     Parameters
     ----------
     kernels : str or list of str, optional
-        Kernel for GPy model.
-        If string, that kernel should be in GPy.kern.
+        Kernel for `GPy` model.
+        If string, that kernel should be in `GPy.kern`.
         If list of str, the sum of kernels is used.
         Default="RBF"
     kernel_options : dict or list of dict, optional
@@ -24,7 +24,7 @@ class GaussianProcessRegressor(_BaseGP, RegressorMixin):
     normalizer : object, optional
         Normalize the outputs Y. Prediction will be un-normalized using
         this normalizer. If normalizer is None, we will normalize using
-        GPy.util.normalizer.Standardize. If normalizer is False, no
+        ``GPy.util.normalizer.Standardize``. If normalizer is False, no
         normalization will be done.
     noise_var : float, optional
         The noise variance for Gaussian likelhood, defaults to 1.
@@ -34,7 +34,7 @@ class GaussianProcessRegressor(_BaseGP, RegressorMixin):
     Attributes
     ----------
     estimator_ : object
-        GPy estimator fitted to data.
+        `GPy` estimator fitted to data.
     n_features_ : int
         Number of features in fitted data.
     """
@@ -48,21 +48,21 @@ class GaussianProcessRegressor(_BaseGP, RegressorMixin):
             kernels, kernel_options, Y_metadata, mean_function)
 
     def _get_model(self, X, y, kernel):
-        """Returns the GPy regression model with initialized params
+        """Returns the `GPy` regression model with initialized params
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
+        X : array-like, shape (n_samples, n_features)
             Training set.
-        y : array-like, shape = [n_samples]
+        y : array-like, shape (n_samples)
             Target values.
         kernel : object
-            GPy kernel.
+            `GPy` kernel.
 
         Returns
         -------
         model : object
-            Returns the GPy regression model.
+            Returns the `GPy` regression model.
 
         """
         return GPRegression(X, y, kernel, self.Y_metadata, self.normalizer,
