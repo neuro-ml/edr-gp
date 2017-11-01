@@ -20,14 +20,14 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 		Kernel for GPy model.
 		If string, that kernel should be in GPy.kern.
 		If list of str, the sum of kernels is used.
-		Default="RBF"
-	kernel_options : dict or list of dict
+		Default="RBF".
+	kernel_options : dict or list of dict, optional
 		Kernel options to be set for kernels.
 		If `kernels` is str, `kernel_options` should be dict.
-		Default={'input_dim': X.shape[1]}
-	Y_metadata
+		Default={'input_dim': X.shape[1]}.
+	Y_metadata : optional
 		Metadata assosiated with points.
-	mean_function :
+	mean_function : optional
 		???
 
 	Attributes
@@ -36,7 +36,6 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 		GPy estimator fitted to data.
 	n_features_ : int
 		Number of features in fitted data.
-
 	"""
 
     def __init__(self, kernels=None, kernel_options=None, Y_metadata=None,
@@ -55,22 +54,22 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
             Training set.
         y : array-like of shape [n_samples]
             Target values.
-        method : {'optimize', 'optimize_restarts'}
+        method : {'optimize', 'optimize_restarts'}, optional
         	Invokes passed method to fit GPy model. 
         	For 'optimize_restarts' perform random restarts of the
-        	model, and set the model to the best
+        	model, and set the model to the best.
 
         Returns
         -------
-        X_new : numpy array of shape [n_samples, n_features_new]
-            Transformed array.
-
+        self : object
+        	Returns self.
         """
         X, y = self._check_data(X, y)
 
-        kernel = self._make_kernel(X)
-        self.estimator_ = self._get_model(X, y, kernel)
         self.n_features_ = X.shape[1]
+        kernel = self._make_kernel()
+        self.estimator_ = self._get_model(X, y, kernel)
+        
 
         opt_kws.setdefault('messages', False)
         opt_kws.setdefault('max_iters', 1000)
@@ -78,7 +77,20 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         return self
 
     def _check_data(self, X, y):
-    	"""Check data before fitting the model."""
+    	"""Check data before fitting the model
+
+    	Parameters
+    	----------
+    	X : array-like, shape = [n_samples, n_features]
+    		Training set.
+    	y : array-like, shape = [n_samples]
+    		Target values.
+
+    	Returns
+    	-------
+    	X : ndarray, shape = [n_samples, n_features]
+    	y : ndarray, shape = [n_samples, 1]
+    	"""
         X, y = check_X_y(X, y, accept_sparse=False)
         if self._estimator_type == 'classifier':
             check_classification_targets(y)
@@ -88,7 +100,14 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
     def _check_input(self, X):
     	"""Check X before predicting
 		
-		X.shape[1] should be equal `n_features_`.
+		Parameters
+		----------
+		X : array-like, shape = [n_samples, n_features]
+			Test points.
+
+		Returns
+    	-------
+    	X : ndarray, shape = [n_samples, n_features]
     	"""
         X = check_array(X, accept_sparse=False)
         if X.shape[1] != self.n_features_:
@@ -96,8 +115,14 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
                              .format(X.shape[1], self.n_features_))
         return X
 
-    def _make_kernel(self, X):
-    	"""Create kernel for GPy model."""
+    def _make_kernel(self):
+    	"""Create kernel for GPy model.
+
+    	Returns
+    	-------
+    	kernel : object
+    		Returns GPy kernel.
+    	"""
 
         # kernel will be initiated as 'RBF' in model automatically
         if self.kernels is None:
@@ -107,7 +132,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
             self.kernels = [self.kernel]
 
         kernels = [getattr(gpy_kern, kern) for kern in self.kernels]
-        input_dim = {'input_dim': X.shape[1]}
+        input_dim = {'input_dim': self.n_features_}
 
         if self.kernel_options is None:
             options = [input_dim] * len(self.kernels)
@@ -126,7 +151,17 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         pass
 
     def _check_predict(self, X):
-    	"""Check that X is correct and model is fitted"""
+    	"""Check X and model before predicting
+
+    	Parameters
+    	----------
+    	X : array-like, shape = [n_samples, n_features]
+    		Testing data.
+
+    	Returns
+    	-------
+    	X : ndarray, shape = [n_samples, n_features]
+    	"""
         X = self._check_input(X)
         check_is_fitted(self, 'estimator_')
         return X
@@ -136,13 +171,16 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
     	Parameters
     	----------
-    	X : array-like, shape = [n_samples, `n_features_`]
+    	X : array-like, shape = [n_samples, n_features]
+    		Testing points.
 
     	Returns
     	-------
     	y_proba : ndarray
-    		Returns the posterior probability of the sample for second
-    		class in the model
+    		For classification returns the posterior probability of the
+    		sample for second class in the model.
+    		For regression returns the posterior mean for each point 
+    		of the sample.
 
     	"""
         X = self._check_predict(X)
@@ -155,13 +193,13 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
     	Parameters
     	----------
-    	X : array-like, shape = [n_samples, `n_features_`]
+    	X : array-like, shape = [n_samples, n_features]
+    		Testing points.
 
     	Returns
     	-------
     	y_proba : ndarray
-    		Returns the posterior variance of the sample for second
-    		class in the model
+    		Returns the posterior variance for each point of the sample.
 
     	"""
         X = self._check_predict(X)
@@ -172,11 +210,12 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
     	Parameters
     	----------
-    	X : array-like, shape = [n_samples, `n_features_`]
+    	X : array-like, shape = [n_samples, n_features]
+    		Testing points.
 		
 		Returns
 		-------
-		grads : ndarray, shape = [n_samples, 'n_features_']
+		grads : ndarray, shape = [n_samples, n_features]
 			Returns the gradients of the sample.
     	"""
         X = self._check_predict(X)
