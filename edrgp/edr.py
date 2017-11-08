@@ -14,10 +14,10 @@ class BaseEDR(TransformerMixin):
     Parameters
     ----------
     estimator : object
-        A supervised learning estimator with a ``predict_gradient`` 
-        and ``fit`` methods. 
+        A supervised learning estimator with a ``predict_gradient``
+        and ``fit`` methods.
     dr_transformer : object
-        A linear dimensionnality reduction method that provides 
+        A linear dimensionnality reduction method that provides
         information about new axes through ``components_`` attribute.
 
     Attributes
@@ -26,7 +26,7 @@ class BaseEDR(TransformerMixin):
         New axes in feature space, representing the directions of
         maximum variance of the target.
     feature_importances_ : ndarray, shape (n_components, n_features)
-        The contribution of each feature to new axes. 
+        The contribution of each feature to new axes.
         n_components = ``dr_transformer.n_components``
     estimator_ : object
         Estimator fitted to preprocessed data.
@@ -60,7 +60,7 @@ class BaseEDR(TransformerMixin):
         y : array-like, shape (n_samples,)
             Target values.
         method : {'optimize', 'optimize_restarts'}, optional
-            Invokes passed method to fit `estimator`. 
+            Invokes passed method to fit `estimator`.
             For 'optimize_restarts' perform random restarts of the
             model, and set the model to the best.
 
@@ -69,6 +69,11 @@ class BaseEDR(TransformerMixin):
         self : object
             Returns self.
         """
+        self._fit_estimator(X, y=None, method='optimize', **opt_kws)
+        self._fit_dr_transformer(X)
+        return self
+
+    def _fit_estimator(self, X, y=None, method='optimize', **opt_kws):
         X, y = check_X_y(X, y, accept_sparse=False)
         if y is not None:
             self.estimator_ = clone(self.estimator)
@@ -76,7 +81,10 @@ class BaseEDR(TransformerMixin):
         elif not hasattr(self, 'estimator_'):
             self.estimator_ = clone(self.estimator)
             # we will check later that the estimator is properly fitted
+        return self
 
+    def _fit_dr_transformer(self, X):
+        check_is_fitted(self, 'estimator_')
         grad = self._get_estimator_gradients(X)
         self.dr_transformer_ = clone(self.dr_transformer)
         self.dr_transformer_.fit(grad)
@@ -155,7 +163,7 @@ class BaseEDR(TransformerMixin):
         Returns
         -------
         feature_importances_ : ndarray, shape (n_components, n_features)
-            The contribution of each feature to new axes. 
+            The contribution of each feature to new axes.
             n_components = ``dr_transformer.n_components``
         """
         check_is_fitted(self, 'components_')
@@ -168,10 +176,10 @@ class EffectiveDimensionalityReduction(BaseEDR):
     Parameters
     ----------
     estimator : object
-        A supervised learning estimator with a ``predict_gradient`` 
-        and ``fit`` methods. 
+        A supervised learning estimator with a ``predict_gradient``
+        and ``fit`` methods.
     dr_transformer : object
-        A linear dimensionnality reduction method that provides 
+        A linear dimensionnality reduction method that provides
         information about new axes through ``components_`` attribute.
     normalize : bool, optional (default=True)
         If True input data will be normalized by ``StandardScaler``
@@ -215,7 +223,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         y : array-like, shape (n_samples,)
             Target values.
         method : {'optimize', 'optimize_restarts'}, optional
-            Invokes passed method to fit `estimator`. 
+            Invokes passed method to fit `estimator`.
             For 'optimize_restarts' perform random restarts of the
             model, and set the model to the best.
 
@@ -313,7 +321,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         Returns
         -------
         feature_importances_ : ndarray, shape (n_components, n_features)
-            The contribution of each feature to new axes. 
+            The contribution of each feature to new axes.
             n_components = ``dr_transformer.n_components``
         """
         check_is_fitted(self, 'components_')
