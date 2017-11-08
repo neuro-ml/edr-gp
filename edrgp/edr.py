@@ -6,6 +6,7 @@ from sklearn.utils import check_array, check_X_y
 from sklearn.base import TransformerMixin, clone
 from copy import deepcopy
 from sklearn.utils.validation import check_is_fitted
+from utils import subspace_variance
 
 
 class BaseEDR(TransformerMixin):
@@ -32,6 +33,12 @@ class BaseEDR(TransformerMixin):
         Estimator fitted to preprocessed data.
     dr_transformer_ : object
         Dr_transformer fitted to gradients.
+    subspace_var_: array, shape (dr_transformer.n_components, )
+        Subspace variance calculated as tr(X.T * X) - tr(Y_i.T * Y_i)
+        where Y_i=XU_i, U_i - orthogonal complement for components_.T[:, :i],
+        i =  1, ..., dr_transformer.n_components
+    subspace_var_ratio_: array, (dr_transformer.n_components, )
+        Subspace variance ratio calculated as subspace_var_/tr(X.T * X)
     """
 
     def __init__(self, estimator, dr_transformer):
@@ -74,6 +81,25 @@ class BaseEDR(TransformerMixin):
         return self
 
     def _fit_estimator(self, X, y=None, method='optimize', **opt_kws):
+        """Fit the estimator with X, y
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Training data, where n_samples in the number of samples
+            and n_features is the number of features.
+        y : array-like, shape (n_samples,)
+            Target values.
+        method : {'optimize', 'optimize_restarts'}, optional
+            Invokes passed method to fit `estimator`.
+            For 'optimize_restarts' perform random restarts of the
+            model, and set the model to the best.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
         X, y = check_X_y(X, y, accept_sparse=False)
         if y is not None:
             self.estimator_ = clone(self.estimator)
@@ -84,12 +110,30 @@ class BaseEDR(TransformerMixin):
         return self
 
     def _fit_dr_transformer(self, X):
+        """Fit the transformer with X and calculate subspace_var_ and
+        subspace_var_ratio_
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Training data, where n_samples in the number of samples
+            and n_features is the number of features.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
         check_is_fitted(self, 'estimator_')
         grad = self._get_estimator_gradients(X)
         self.dr_transformer_ = clone(self.dr_transformer)
         self.dr_transformer_.fit(grad)
         self._check_transformer(self.dr_transformer_)
         self.components_ = deepcopy(self.dr_transformer_.components_)
+        comps, var_, var_ratio_ = subspace_variance(grad, self.components_.T)
+        self.components_ = comps.T
+        self.subspace_variance_ = var_
+        self.subspace_variance_ratio_ = var_ratio_
         return self
 
     def get_estimator_gradients(self, X):
@@ -203,6 +247,12 @@ class EffectiveDimensionalityReduction(BaseEDR):
         ``StandardScaler`` fitted to raw data.
     preprocessor_ : object
         Preprocessor fitted to normalized data.
+    subspace_var_: array, shape (dr_transformer.n_components, )
+        Subspace variance calculated as tr(X.T * X) - tr(Y_i.T * Y_i)
+        where Y_i=XU_i, U_i - orthogonal complement for components_.T[:, :i],
+        i =  1, ..., dr_transformer.n_components
+    subspace_var_ratio_: array, (dr_transformer.n_components, )
+        Subspace variance ratio calculated as subspace_var_/tr(X.T * X)
     """
 
     def __init__(self, estimator, dr_transformer, normalize=True,
