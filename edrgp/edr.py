@@ -76,7 +76,7 @@ class BaseEDR(TransformerMixin):
         self : object
             Returns self.
         """
-        self._fit_estimator(X, y=None, method='optimize', **opt_kws)
+        self._fit_estimator(X, y, method, **opt_kws)
         self._fit_dr_transformer(X)
         return self
 
