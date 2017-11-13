@@ -19,7 +19,7 @@ def ort_space(A):
         basis in orthogonal space
     """
     U, s, _ = scipy.linalg.svd(a=A, full_matrices=True)
-    return U[:, sum(abs(s) > 0):]
+    return U[:, sum(abs(s) > 1e-10):]
 
 
 def prepare_data(X, V):
