@@ -1,3 +1,4 @@
+import scipy
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -6,12 +7,53 @@ from edrgp.edr import EffectiveDimensionalityReduction
 from edrgp.datasets import get_gaussian_inputs, get_tanh_targets
 from sklearn.feature_selection import mutual_info_regression
 from sklearn.decomposition import PCA
+from scipy.linalg import sqrtm, inv
+
 sns.set()
 
 PALETTE = sns.color_palette()
 MARKERS = ['o', 's', 'v']
 MARKER_SIZE = 12
 CMAP = sns.diverging_palette(220, 20, s=99, as_cmap=True)
+
+
+def sym(w):
+    return w.dot(inv(sqrtm(w.T.dot(w))))
+
+
+def data_2example(sample_size=500, noise_std=0.03, density=0.2):
+    # generate covariance mat
+    U = np.random.rand(8, 8)
+    U = sym(U)
+    S = np.diag([2, 1.7, 1.4, 1.1, 0.9, 0.7, 0.4, 0.1])
+    cov = np.dot(np.dot(U, S), U.T)
+    # generate centered inputs
+    X = np.random.multivariate_normal(np.zeros((1, 8))[0], cov, sample_size)
+    X -= X.mean(0)
+    B = scipy.sparse.rand(X.shape[1], 3, density=density, random_state=7)
+    y = func_2example(X, B.A) + noise_std * np.random.randn(sample_size)
+    return X, y, B.A
+
+
+def func_2example(X, B):
+    return np.sum(np.tanh(np.dot(X, B)), axis=1)
+
+
+def norm(B):
+    return B / np.sqrt(np.sum(B**2, axis=0))
+
+
+def index_columns(B):
+    index = []
+    columns = []
+
+    for i in range(B.shape[0]):
+        index.append('Feature %d' % (i + 1))
+
+    for i in range(B.shape[1]):
+        columns.append('Combnation %d' % (i + 1))
+
+    return index, columns
 
 
 def get_2d_data():
