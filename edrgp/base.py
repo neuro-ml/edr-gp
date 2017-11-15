@@ -16,7 +16,7 @@ class BaseEDR(TransformerMixin):
     estimator : object
         A supervised learning estimator with a ``predict_gradient``
         and ``fit`` methods.
-    dr_transformer : object
+    dr_transformer : objec
         A linear dimensionnality reduction method that provides
         information about new axes through ``components_`` attribute.
 
@@ -58,7 +58,7 @@ class BaseEDR(TransformerMixin):
             raise AttributeError('The transformer does not expose '
                                  '"components_" attribute')
 
-    def fit(self, X, y=None, method='optimize', **opt_kws):
+    def fit(self, X, y=None, **opt_kws):
         """Fit the model with X, y
 
         Parameters
@@ -68,21 +68,17 @@ class BaseEDR(TransformerMixin):
             and n_features is the number of features.
         y : array-like, shape (n_samples,)
             Target values.
-        method : {'optimize', 'optimize_restarts'}, optional
-            Invokes passed method to fit `estimator`.
-            For 'optimize_restarts' perform random restarts of the
-            model, and set the model to the best.
 
         Returns
         -------
         self : object
             Returns self.
         """
-        self._fit_estimator(X, y, method, **opt_kws)
+        self._fit_estimator(X, y, **opt_kws)
         self._fit_dr_transformer(X)
         return self
 
-    def _fit_estimator(self, X, y, method, **opt_kws):
+    def _fit_estimator(self, X, y, **opt_kws):
         """Fit the estimator with X, y
 
         Parameters
@@ -92,10 +88,6 @@ class BaseEDR(TransformerMixin):
             and n_features is the number of features.
         y : array-like, shape (n_samples,)
             Target values.
-        method : {'optimize', 'optimize_restarts'}, optional
-            Invokes passed method to fit `estimator`.
-            For 'optimize_restarts' perform random restarts of the
-            model, and set the model to the best.
 
         Returns
         -------
@@ -105,7 +97,7 @@ class BaseEDR(TransformerMixin):
         X, y = check_X_y(X, y, accept_sparse=False)
         if y is not None:
             self.estimator_ = clone(self.estimator)
-            self.estimator_.fit(X, y, method, **opt_kws)
+            self.estimator_.fit(X, y, **opt_kws)
         elif not hasattr(self, 'estimator_'):
             self.estimator_ = clone(self.estimator)
             # we will check later that the estimator is properly fitted

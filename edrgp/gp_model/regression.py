@@ -29,7 +29,10 @@ class GaussianProcessRegressor(_BaseGP, RegressorMixin):
     noise_var : float, optional
         The noise variance for Gaussian likelhood, defaults to 1.
     mean_function : optional
-        ???
+    method : {'optimize', 'optimize_restarts'}, optional
+        Invokes passed method to fit `GPy` model. 
+        For 'optimize_restarts' perform random restarts of the
+        model, and set the model to the best.
 
     Attributes
     ----------
@@ -40,12 +43,13 @@ class GaussianProcessRegressor(_BaseGP, RegressorMixin):
     """
 
     def __init__(self, kernels=None, kernel_options=None, Y_metadata=None,
-                 normalizer=None, noise_var=1.0, mean_function=None):
+                 normalizer=None, noise_var=1.0, mean_function=None,
+                 method='optimize'):
         self.normalizer = normalizer
         self.noise_var = noise_var
 
         super(GaussianProcessRegressor, self).__init__(
-            kernels, kernel_options, Y_metadata, mean_function)
+            kernels, kernel_options, Y_metadata, mean_function, method)
 
     def _get_model(self, X, y, kernel):
         """Returns the `GPy` regression model with initialized params

@@ -60,7 +60,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         super(EffectiveDimensionalityReduction, self).__init__(
             estimator, dr_transformer)
 
-    def fit(self, X, y=None, method='optimize', **opt_kws):
+    def fit(self, X, y=None, **opt_kws):
         """Fit the model with X, y
 
         Parameters
@@ -70,10 +70,6 @@ class EffectiveDimensionalityReduction(BaseEDR):
             and n_features is the number of features.
         y : array-like, shape (n_samples,)
             Target values.
-        method : {'optimize', 'optimize_restarts'}, optional
-            Invokes passed method to fit `estimator`.
-            For 'optimize_restarts' perform random restarts of the
-            model, and set the model to the best.
 
         Returns
         -------
@@ -82,7 +78,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         """
         X = self._preprocessing_fit(X)
         super(EffectiveDimensionalityReduction,
-              self).fit(X, y, method, **opt_kws)
+              self).fit(X, y, **opt_kws)
         if self.normalize is True:
             self.components_ = np.dot(self.components_, self._scaling_)
         return self

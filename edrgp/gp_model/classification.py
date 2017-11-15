@@ -18,10 +18,13 @@ class GaussianProcessClassifier(_BaseGP, ClassifierMixin):
         Kernel options to be set for kernels.
         If `kernels` is str, `kernel_options` should be dict.
         Default={'input_dim': X.shape[1]}
-    Y_metadata
+    Y_metadata : optional
         Metadata assosiated with points.
-    mean_function :
-        ???
+    mean_function : optional
+    method : {'optimize', 'optimize_restarts'}, optional
+        Invokes passed method to fit `GPy` model. 
+        For 'optimize_restarts' perform random restarts of the
+        model, and set the model to the best.
 
     Attributes
     ----------

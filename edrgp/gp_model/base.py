@@ -28,7 +28,10 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
     Y_metadata : optional
         Metadata assosiated with points.
     mean_function : optional
-        ???
+    method : {'optimize', 'optimize_restarts'}, optional
+        Invokes passed method to fit `GPy` model. 
+        For 'optimize_restarts' perform random restarts of the
+        model, and set the model to the best.
 
     Attributes
     ----------
@@ -39,13 +42,14 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
     """
 
     def __init__(self, kernels=None, kernel_options=None, Y_metadata=None,
-                 mean_function=None):
+                 mean_function=None, method='optimize'):
         self.kernels = kernels
         self.kernel_options = kernel_options
         self.Y_metadata = Y_metadata
         self.mean_function = mean_function
+        self.method = method
 
-    def fit(self, X, y, method='optimize', **opt_kws):
+    def fit(self, X, y, **opt_kws):
         """Fit the model according to the given training data
 
         Parameters
@@ -54,10 +58,6 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
             Training set.
         y : array-like, shape (n_samples)
             Target values.
-        method : {'optimize', 'optimize_restarts'}, optional
-            Invokes passed method to fit `GPy` model. 
-            For 'optimize_restarts' perform random restarts of the
-            model, and set the model to the best.
 
         Returns
         -------
@@ -69,11 +69,10 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         self.n_features_ = X.shape[1]
         kernel = self._make_kernel()
         self.estimator_ = self._get_model(X, y, kernel)
-        
 
         opt_kws.setdefault('messages', False)
         opt_kws.setdefault('max_iters', 1000)
-        getattr(self.estimator_, method)(**opt_kws)
+        getattr(self.estimator_, self.method)(**opt_kws)
         return self
 
     def _check_data(self, X, y):
@@ -99,7 +98,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
     def _check_input(self, X):
         """Check X before predicting
-        
+
         Parameters
         ----------
         X : array-like, shape (n_samples, n_features)
@@ -212,7 +211,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         ----------
         X : array-like, shape (n_samples, n_features)
             Testing points.
-        
+
         Returns
         -------
         grads : ndarray, shape (n_samples, n_features)
