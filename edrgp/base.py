@@ -82,7 +82,7 @@ class BaseEDR(TransformerMixin):
         self._fit_dr_transformer(X)
         return self
 
-    def _fit_estimator(self, X, y=None, method='optimize', **opt_kws):
+    def _fit_estimator(self, X, y, method, **opt_kws):
         """Fit the estimator with X, y
 
         Parameters
