@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from copy import deepcopy
-from edrgp.regression import GaussianProcessRegressor
+from edrgp.gp_model.regression import GaussianProcessRegressor
 from edrgp.edr import EffectiveDimensionalityReduction
 from edrgp.datasets import get_gaussian_inputs, get_tanh_targets
 from sklearn.feature_selection import mutual_info_regression
