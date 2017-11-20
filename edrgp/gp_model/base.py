@@ -128,7 +128,7 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
             return self.kernels
 
         if isinstance(self.kernels, str):
-            self.kernels = [self.kernel]
+            self.kernels = [self.kernels]
 
         kernels = [getattr(gpy_kern, kern) for kern in self.kernels]
         input_dim = {'input_dim': self.n_features_}
