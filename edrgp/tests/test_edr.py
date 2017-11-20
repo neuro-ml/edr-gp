@@ -1,11 +1,12 @@
 import pytest
 import numpy as np
 from copy import deepcopy
-from edrgp.regression import GaussianProcessRegressor
+from edrgp.gp_model.regression import GaussianProcessRegressor
 from edrgp.edr import EffectiveDimensionalityReduction
 from edrgp.datasets import get_gaussian_inputs, get_tanh_targets
 from sklearn.feature_selection import mutual_info_regression
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 
 def get_2d_data(mean=None):
@@ -67,3 +68,19 @@ def test_preprocess(mean):
     edr.fit(X, y)
     components_no_shift = edr.components_
     assert np.allclose(components_shift, components_no_shift, rtol=1e-3)
+
+@pytest.mark.parametrize("mean", [[0, 0], [10, -10]])
+def test_scaling(mean):
+    X, y = get_2d_data(mean)
+    # EDR with scaling
+    edr_sc = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
+        PCA(), normalize=True)
+    edr_sc.fit(X, y)
+    x1 = edr_sc.transform(X-np.mean(X, axis=0))
+    # EDR without scaling
+    edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
+        PCA(), normalize=False)
+    X_scaled = StandardScaler().fit_transform(X)
+    x2 = edr.fit_transform(X_scaled, y)
+
+    assert np.allclose(x1, x2)
