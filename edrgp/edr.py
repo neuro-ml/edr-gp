@@ -80,7 +80,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         super(EffectiveDimensionalityReduction,
               self).fit(X, y, **opt_kws)
         if self.normalize is True:
-            self.components_ = np.dot(self.components_, self._scaling_)
+            self.components_ = np.dot(self.components_, self._reverse_scaling_)
         return self
 
     def _preprocessing_fit(self, X, transform=True):
@@ -195,5 +195,5 @@ class EffectiveDimensionalityReduction(BaseEDR):
         check_is_fitted(self, 'components_')
         importances_ = self.components_
         if self.normalize is True:
-            importances_ = np.dot(importances_, self._reverse_scaling_)
+            importances_ = np.dot(importances_, self._scaling_)
         return importances_
