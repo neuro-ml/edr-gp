@@ -57,7 +57,7 @@ def get_branin_targets(X, noise_std=None):
     a, b, c = 1, 5.1 / (4 * pi**2), 5 / pi
     r, s, t = 6, 10, 1 / (8 * pi)
     # x0 ∈ [-5, 10], x1 ∈ [0, 15].
-    x0 = 15 * X[:, 0] - 10
+    x0 = 15 * X[:, 0] - 5
     x1 = 15 * X[:, 1]
     y = a * (x1 - b * x0**2 + c * x0 - r)**2 + s * (1 - t) * np.cos(x0) + s
     if noise_std is not None:
