@@ -1,6 +1,8 @@
 import scipy
 import numpy as np
 from copy import deepcopy
+from sklearn.utils import check_array
+from sklearn.base import TransformerMixin
 
 
 def ort_space(A):
@@ -148,7 +150,7 @@ class CustomPCA(TransformerMixin):
 
         self.components_ = Vh[:n_components, :]
         self.subspace_variance_ = (S**2)[:n_components]
-        self.subspace_variance_ratio_ = expl_var_ratio[:n_components]
+        self.subspace_variance_ratio_ = subspace_var_ratio[:n_components]
 
         return self
 
