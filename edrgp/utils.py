@@ -2,7 +2,7 @@ import scipy
 import numpy as np
 from copy import deepcopy
 from sklearn.utils import check_array
-from sklearn.base import TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator
 
 
 def ort_space(A):
