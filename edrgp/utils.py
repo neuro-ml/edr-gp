@@ -76,7 +76,7 @@ def subspace_variance(X, V):
     return V_copy[:, indexes], np.array(expl_var), np.array(expl_var_ratio)
 
 
-class CustomPCA(TransformerMixin):
+class CustomPCA(BaseEstimator, TransformerMixin):
     """PCA without centering and scaling
 
     Linear dimensionality reduction using Singular Value 
