@@ -31,6 +31,11 @@ def get_tanh_targets(X, coefs, bias=0, noise_std=0.05):
     return y
 
 
+def get_beta_inputs(sample_size, ndim, tau=1):
+    "Generates data from 2*Beta(1, tau)-1"
+    return 2*np.random.beta(1, tau, size=(sample_size, ndim))-1
+
+
 def get_branin_targets(X, noise_std=None):
     '''Branin function generator
     It's a smooth 2D function which is frequently used as a target for
