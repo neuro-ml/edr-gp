@@ -5,8 +5,10 @@ from edrgp.gp_model.regression import GaussianProcessRegressor
 from edrgp.edr import EffectiveDimensionalityReduction
 from edrgp.datasets import get_gaussian_inputs, get_tanh_targets
 from sklearn.feature_selection import mutual_info_regression
-from sklearn.decomposition import PCA
+# from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from edrgp.utils import CustomPCA
+from edrgp.utils import discrepancy
 
 
 def get_2d_data(mean=None):
@@ -25,7 +27,7 @@ def get_2d_data(mean=None):
 def test_mi(mean):
     X, y = get_2d_data(mean)
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           PCA(n_components=1), True)
+                                           CustomPCA(n_components=1), True)
     edr.fit(X, y)
     mi = mutual_info_regression(edr.transform(X), y)[0]
     assert mi > 1
@@ -35,7 +37,8 @@ def test_mi(mean):
 def test_translation(normalize):
     X, y = get_2d_data(mean=[10, -10])
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           PCA(n_components=1), normalize)
+                                           CustomPCA(n_components=1), 
+                                           normalize)
     edr.fit(X, y)
     components_shift = edr.components_
 
@@ -53,7 +56,7 @@ def test_preprocess(mean):
     y = get_tanh_targets(X, [0.5, 0.5, 0, 0])
 
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           PCA(n_components=1), True,
+                                           CustomPCA(n_components=1), True,
                                            PCA(n_components=2))
     edr.fit(X, y)
     # print(edr.components_)
@@ -74,12 +77,12 @@ def test_scaling(mean):
     X, y = get_2d_data(mean)
     # EDR with scaling
     edr_sc = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-        PCA(), normalize=True)
+                                              CustomPCA(), normalize=True)
     edr_sc.fit(X, y)
     x1 = edr_sc.transform(X-np.mean(X, axis=0))
     # EDR without scaling
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-        PCA(), normalize=False)
+                                           CustomPCA(), normalize=False)
     X_scaled = StandardScaler().fit_transform(X)
     x2 = edr.fit_transform(X_scaled, y)
 
