@@ -5,7 +5,7 @@ from copy import deepcopy
 from sklearn.base import TransformerMixin, clone
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted
-from .utils import subspace_variance
+from .utils import subspace_variance_ratio
 
 
 class BaseEDR(TransformerMixin):
