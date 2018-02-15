@@ -124,9 +124,9 @@ class BaseEDR(TransformerMixin):
         self.dr_transformer_.fit(grad)
         self._check_transformer(self.dr_transformer_)
         self.components_ = deepcopy(self.dr_transformer_.components_)
-        comps, var_, var_ratio_ = subspace_variance(grad, self.components_.T)
-        self.components_ = comps.T
-        self.subspace_variance_ = var_
+        var_ratio = subspace_variance_ratio(grad, self.components_.T)
+        self.components_ = self.components_/np.linalg.norm(self.components_, 
+                                                           axis=0)
         self.subspace_variance_ratio_ = var_ratio_
         return self
 

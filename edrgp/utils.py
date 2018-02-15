@@ -24,56 +24,107 @@ def ort_space(A):
     return U[:, sum(abs(s) > 1e-10):]
 
 
-def prepare_data(X, V):
-    X_copy = deepcopy(X)
-    X_copy -= np.mean(X_copy, axis=0)
+# def prepare_data(X, V):
+#     X_copy = deepcopy(X)
+#     X_copy -= np.mean(X_copy, axis=0)
 
-    if len(V.shape) == 1:
-        V_copy = np.array(V, ndmin=2).T
-        dim = 1
+#     if len(V.shape) == 1:
+#         V_copy = np.array(V, ndmin=2).T
+#         dim = 1
+#     else:
+#         V_copy = deepcopy(V)
+#         dim = V.shape[1]
+
+#     return X_copy, V_copy, dim
+
+
+# def _subspace_variance(X, V):
+#     F = ort_space(V)
+#     tot_var = np.trace(np.dot(X.T, X))
+
+#     D = np.dot(F, F.T)
+#     var = np.trace(np.dot(X, np.dot(D, X.T)))
+
+#     return (tot_var - var) / (X.shape[0] - 1), 1 - var / tot_var
+
+
+# def subspace_variance(X, V):
+#     X_copy, V_copy, dim = prepare_data(X, V)
+#     indexes = []
+#     expl_var = []
+#     expl_var_ratio = []
+
+#     for j in range(dim):
+#         var_ratio = []
+#         var = []
+
+#         for i in range(dim):
+
+#             if i not in indexes:
+#                 _var = _subspace_variance(X_copy, V_copy[:, indexes + [i]])
+#                 var.append(_var[0])
+#                 var_ratio.append(_var[1])
+#             else:
+#                 var.append(-1)
+#                 var_ratio.append(-1)
+
+#         idx = np.argsort(var_ratio)[::-1][0]
+#         indexes.append(idx)
+#         expl_var.append(var[idx])
+#         expl_var_ratio.append(var_ratio[idx])
+
+#     return V_copy[:, indexes], np.array(expl_var), np.array(expl_var_ratio)
+
+def subspace_variance_ratio(X, V):
+    """Compute subspace variance for V in X
+
+    If V is not orthonormalized then it will return only one 
+    value: subspace variance the whole matrix V.
+
+    Parameters
+    ----------
+    X : array, shape (n_samples, n_features)
+
+    V : array, shape (n_feaures, n_components)
+        Projector components
+
+    Returns
+    -------
+    subspace_variance : array, shape (n_components, )
+        Subspace variance for each column of V
+    """
+    if np.allclose(np.dot(V.T, V), np.eye(V.shape[1])):
+            subspace_variance_ratio_ = (
+                np.linalg.norm(X.dot(V), axis=0) / 
+                np.linalg.norm(X) ) ** 2
     else:
-        V_copy = deepcopy(V)
-        dim = V.shape[1]
-
-    return X_copy, V_copy, dim
-
-
-def _subspace_variance(X, V):
-    F = ort_space(V)
-    tot_var = np.trace(np.dot(X.T, X))
-
-    D = np.dot(F, F.T)
-    var = np.trace(np.dot(X, np.dot(D, X.T)))
-
-    return (tot_var - var) / (X.shape[0] - 1), 1 - var / tot_var
+        V_orthonormalized = np.linalg.qr(V)[0]
+        subspace_variance_ratio_ = (
+                np.linalg.norm(X.dot(V_orthonormalized)) / 
+                np.linalg.norm(X) ) ** 2
+    return subspace_variance_ratio_
 
 
-def subspace_variance(X, V):
-    X_copy, V_copy, dim = prepare_data(X, V)
-    indexes = []
-    expl_var = []
-    expl_var_ratio = []
+def discrepancy(B, V):
+    """Measure of difference between two subspaces
 
-    for j in range(dim):
-        var_ratio = []
-        var = []
+    The discrepancy is measuared by the following formula:
+    ||BB^T(I - VV^T)||_F/d, where d denotes number of true components and
+    I is an identity matrix with shape n_features.
 
-        for i in range(dim):
+    Parameters
+    ----------
+    B : array, shape (n_features, n_components_true)
+        The true projector on subspace
 
-            if i not in indexes:
-                _var = _subspace_variance(X_copy, V_copy[:, indexes + [i]])
-                var.append(_var[0])
-                var_ratio.append(_var[1])
-            else:
-                var.append(-1)
-                var_ratio.append(-1)
+    V : array, shape (n_features, n_components)
+        The estimated projector on subspace
 
-        idx = np.argsort(var_ratio)[::-1][0]
-        indexes.append(idx)
-        expl_var.append(var[idx])
-        expl_var_ratio.append(var_ratio[idx])
-
-    return V_copy[:, indexes], np.array(expl_var), np.array(expl_var_ratio)
+    Returns
+    -------
+    """
+    return norm(np.dot(B.dot(B.T), 
+                       (np.eye(B.shape[0]) - V.dot(V.T)))) / B.shape[1]
 
 
 class CustomPCA(BaseEstimator, TransformerMixin):
