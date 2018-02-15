@@ -5,7 +5,7 @@ from edrgp.gp_model.regression import GaussianProcessRegressor
 from edrgp.edr import EffectiveDimensionalityReduction
 from edrgp.datasets import get_gaussian_inputs, get_tanh_targets
 from sklearn.feature_selection import mutual_info_regression
-# from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from edrgp.utils import CustomPCA
 from edrgp.utils import discrepancy
