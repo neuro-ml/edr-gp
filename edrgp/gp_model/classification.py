@@ -53,3 +53,37 @@ class GaussianProcessClassifier(_BaseGP, ClassifierMixin):
         """
         return _GPClassification(X, y, kernel, self.Y_metadata,
                                  self.mean_function)
+
+    def predict(self, X):
+        """Predict the target for the new points
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Testing points.
+
+        Returns
+        -------
+        y : ndarray
+            Returns 1 if the posterior probability of second class is higher
+            than 0.5, else returns 0.
+
+        """
+        return super(GaussianProcessClassifier, self).predict(X) > 0.5
+
+    def predict_proba(self, X):
+        """Predict the target for the new points
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Testing points.
+
+        Returns
+        -------
+        y_proba : ndarray
+            Returns the posterior probability of the
+            sample for second class in the model.
+
+        """
+        return super(GaussianProcessClassifier, self).predict(X)
