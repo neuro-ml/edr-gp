@@ -293,3 +293,20 @@ class BaseEDR(TransformerMixin):
         if not hasattr(transformer, 'components_'):
             raise AttributeError('The transformer does not expose '
                                  '"components_" attribute')
+
+
+class ExtendedEDR(BaseEDR):
+
+    def __init__(self, estimator, dr_transformer, refit_transformer,
+                 n_components=None, step=None):
+        super(ExtendedEDR, self).__init__(estimator, dr_transformer,
+                                          n_components, step)
+        self.refit_transformer = refit_transformer
+
+    def fit(self, X, y=None, **opt_kws):
+        super(ExtendedEDR, self).fit(X, y, **opt_kws)
+        self.refit(self.refit_transformer)
+
+    def transform(self, X):
+        super(ExtendedEDR, self).transform(X, refitted=True)
+
