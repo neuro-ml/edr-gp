@@ -59,7 +59,7 @@ def test_preprocess(mean):
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
                                            CustomPCA(), n_components=1, 
                                            normalize=True,
-                                           PCA(n_components=2))
+                                           preprocessor=PCA(n_components=2))
     edr.fit(X, y)
     # print(edr.components_)
     # mi = mutual_info_regression(edr.transform(X), y)[0]
@@ -70,7 +70,7 @@ def test_preprocess(mean):
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
                                            CustomPCA(), n_components=1, 
                                            normalize=True,
-                                           PCA(n_components=2))
+                                           preprocessor=PCA(n_components=2))
     edr.fit(X, y)
     components_no_shift = edr.components_
     assert np.allclose(components_shift, components_no_shift, rtol=1e-3)
