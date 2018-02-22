@@ -76,7 +76,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         self : object
             Returns self.
         """
-        X = self._preprocessing_fit(X)
+        X = self._preprocessing_fit(X)        
         super(EffectiveDimensionalityReduction,
               self).fit(X, y, **opt_kws)
         if self.normalize is True:

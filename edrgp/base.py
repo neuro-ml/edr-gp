@@ -70,19 +70,20 @@ class BaseEDR(TransformerMixin):
         if self.n_components is None:
             self.n_components_ = X.shape[1]
             if isinstance(self.step, int):
-                raise ValueError("")
+                mes = "If step is int n_components must be specified"
+                raise ValueError(mes)
         else:
             self.n_components_ = self.n_components
 
         self.adaptive_step = False
         if self.step is None:
             self.step_ = self.n_components_
-            if self.n_components is not None:
-                raise ValueError(
-                    "If step is float n_components should be None")
         elif isinstance(self.step, int) and self.step > 0:
             self.step_ = self.step
         elif isinstance(self.step, float) and 0 < self.step < 1:
+            if self.n_components is not None:
+                mes = "If step is float n_components should be None"
+                raise ValueError(mes)
             self.adaptive_step = True
             self.step_ = self.step
         else:
@@ -93,9 +94,9 @@ class BaseEDR(TransformerMixin):
         self.components_ = None
         X_proj = X.copy()
         while self.continue_iteration:
-            self._fit_estimator(X, y, **opt_kws)
-            self._fit_dr_transformer(X)
-            X_proj = self.transform(X)
+            self._fit_estimator(X_proj, y, **opt_kws)
+            self._fit_dr_transformer(X_proj)
+            X_proj = self.transform(X_proj)
 
         self._last_fit(X_proj, y, **opt_kws)
         return self
