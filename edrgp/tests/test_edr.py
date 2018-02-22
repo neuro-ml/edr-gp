@@ -50,30 +50,30 @@ def test_translation(normalize):
     assert np.allclose(components_shift, components_no_shift, rtol=1e-3)
 
 
-@pytest.mark.parametrize("mean", [[0, 0, 0, 0], [10, -10, 100, -100]])
-def test_preprocess(mean):
-    X = get_gaussian_inputs(
-        eig_values=[1, 0.3, 0.001, 0.001], sample_size=500, mean=mean)
-    y = get_tanh_targets(X, [0.5, 0.5, 0, 0])
+# @pytest.mark.parametrize("mean", [[0, 0, 0, 0], [10, -10, 100, -100]])
+# def test_preprocess(mean):
+#     X = get_gaussian_inputs(
+#         eig_values=[1, 0.3, 0.001, 0.001], sample_size=500, mean=mean)
+#     y = get_tanh_targets(X, [0.5, 0.5, 0, 0])
 
-    edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1, 
-                                           normalize=True,
-                                           preprocessor=PCA(n_components=2))
-    edr.fit(X, y)
-    # print(edr.components_)
-    # mi = mutual_info_regression(edr.transform(X), y)[0]
-    # assert mi > 1
-    components_shift = edr.components_
+#     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
+#                                            CustomPCA(), n_components=1, 
+#                                            normalize=True,
+#                                            preprocessor=PCA(n_components=2))
+#     edr.fit(X, y)
+#     # print(edr.components_)
+#     # mi = mutual_info_regression(edr.transform(X), y)[0]
+#     # assert mi > 1
+#     components_shift = edr.components_
 
-    X -= X.mean(0)
-    edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1, 
-                                           normalize=True,
-                                           preprocessor=PCA(n_components=2))
-    edr.fit(X, y)
-    components_no_shift = edr.components_
-    assert np.allclose(components_shift, components_no_shift, rtol=1e-3)
+#     X -= X.mean(0)
+#     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
+#                                            CustomPCA(), n_components=1, 
+#                                            normalize=True,
+#                                            preprocessor=PCA(n_components=2))
+#     edr.fit(X, y)
+#     components_no_shift = edr.components_
+#     assert np.allclose(components_shift, components_no_shift, rtol=1e-3)
 
 @pytest.mark.parametrize("mean", [[0, 0], [10, -10]])
 def test_scaling(mean):
