@@ -97,7 +97,7 @@ class BaseEDR(TransformerMixin):
             self._fit_dr_transformer(X)
             X_proj = self.transform(X)
 
-        self._last_fit(X_proj, y)
+        self._last_fit(X_proj, y, **opt_kws)
         return self
 
     def refit(self, refit_transformer):
@@ -111,7 +111,7 @@ class BaseEDR(TransformerMixin):
                                                   axis=1).reshape(-1, 1))
         return self
 
-    def _last_fit(self, X, y):
+    def _last_fit(self, X, y, **opt_kws):
         """Compute gradients for original and effective subspaces.
 
         Also computes subspace variance ratio for gradients in effective 
