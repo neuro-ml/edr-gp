@@ -43,20 +43,12 @@ class BaseEDR(TransformerMixin):
         n_components = ``dr_transformer.n_components``
     """
 
-    def __init__(self, estimator, dr_transformer):
+    def __init__(self, estimator, dr_transformer, n_components=None,
+                 step=None):
         self.estimator = estimator
         self.dr_transformer = dr_transformer
-
-    def _check_transformer(self, transformer):
-        """Check that transformer has attribute ``components_``.
-
-        Parameters
-        ----------
-        transformer : object
-        """
-        if not hasattr(transformer, 'components_'):
-            raise AttributeError('The transformer does not expose '
-                                 '"components_" attribute')
+        self.n_components = n_components
+        self.step = step
 
     def fit(self, X, y=None, **opt_kws):
         """Fit the model with X, y
@@ -74,12 +66,81 @@ class BaseEDR(TransformerMixin):
         self : object
             Returns self.
         """
+
+        if self.n_components is None:
+            self.n_components_ = X.shape[1]
+            if isinstance(self.step, int):
+                raise ValueError("")
+        else:
+            self.n_components_ = self.n_components
+
+        self.adaptive_step = False
+        if self.step is None:
+            self.step_ = self.n_components_
+            if self.n_components is not None:
+                raise ValueError(
+                    "If step is float n_components should be None")
+        elif isinstance(self.step, int) and self.step > 0:
+            self.step_ = self.step
+        elif isinstance(self.step, float) and 0 < self.step < 1:
+            self.adaptive_step = True
+            self.step_ = self.step
+        else:
+            mes = "Step should be None or int > 0 or float from 0 to 1"
+            raise ValueError(mes)
+
+        self.continue_iteration = True
+        self.components_ = None
+        X_proj = X.copy()
+        while self.continue_iteration:
+            self._fit_estimator(X, y, **opt_kws)
+            self._fit_dr_transformer(X)
+            X_proj = self.transform(X)
+
+        self._last_fit(X_proj, y)
+        return self
+
+    def refit(self, refit_transformer):
+        check_is_fitted(self, 'components_')
+        self.refit_transformer_ = clone(refit_transformer)
+        self.refit_transformer_.fit(self.gradients_)
+        self._check_transformer(self.refit_transformer_)
+        self.refit_components_ = deepcopy(self.refit_transformer_.components_)
+        self.refit_components_ = (
+            self.refit_components_/np.linalg.norm(self.refit_components_,
+                                                  axis=1).reshape(-1, 1))
+        return self
+
+    def _last_fit(self, X, y):
+        """Compute gradients for original and effective subspaces.
+
+        Also computes subspace variance ratio for gradients in effective 
+        subspace with respect to original gradients
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_componets)
+            Training data, projected to effective subspace.
+        y : array-like, shape (n_samples,)
+            Target values.
+
+        Returns
+        -------
+        self : object
+                Returns self.
+
+        """
         self._fit_estimator(X, y, **opt_kws)
-        self._fit_dr_transformer(X)
+        check_is_fitted(self, 'estimator_')
+        grad = self._get_estimator_gradients(X)
+        self.subspace_gradients_ = grad
+        self.gradients_ = np.dot(grad, self.components_)
+        self.subspace_variance_ratio_ = subspace_variance_ratio(
+            self.gradients_, self.components_.T)
         return self
 
     def _fit_estimator(self, X, y, **opt_kws):
-        """Fit the estimator with X, y
+        """Fit the estimator with X, y.
 
         Parameters
         ----------
@@ -123,11 +184,22 @@ class BaseEDR(TransformerMixin):
         self.dr_transformer_ = clone(self.dr_transformer)
         self.dr_transformer_.fit(grad)
         self._check_transformer(self.dr_transformer_)
-        self.components_ = deepcopy(self.dr_transformer_.components_)
-        var_ratio_ = subspace_variance_ratio(grad, self.components_.T)
-        self.components_ = self.components_/np.linalg.norm(self.components_, 
-                                                           axis=0)
-        self.subspace_variance_ratio_ = var_ratio_
+        components = deepcopy(self.dr_transformer_.components_)
+
+        if self.adaptive_step:
+            var_ratio_ = subspace_variance_ratio(grad, components.T)
+            n_components = np.sum(np.cumsum(var_ratio_) < self.step_,
+                                  dtype=int) + 1
+            if n_components == grad.shape[1]:
+                self.continue_iteration = False
+        else:
+            n_components = max(self.n_components_, X.shape[1] - self.step_)
+            if n_components == self.n_components_:
+                self.continue_iteration = False
+
+        components = components[:n_components, :]
+        self.components_ = (components if self.components_ is None else
+                            np.dot(components, self.components_))
         return self
 
     def get_estimator_gradients(self, X):
@@ -155,7 +227,7 @@ class BaseEDR(TransformerMixin):
         grad = self.estimator_.predict_gradient(X)
         return grad
 
-    def transform(self, X):
+    def transform(self, X, refitted=False):
         """Apply dimensionality reduction on X.
 
         X is projected on the components previous extracted
@@ -173,6 +245,9 @@ class BaseEDR(TransformerMixin):
         """
         check_is_fitted(self, 'components_')
         X = check_array(X)
+        if refitted:
+            check_is_fitted(self, ['refit_transformer_', 'refit_components_'])
+            return np.dot(X, self.refit_components_.T)
         return np.dot(X, self.components_.T)
 
     def inverse_transform(self, X):
@@ -206,3 +281,14 @@ class BaseEDR(TransformerMixin):
         """
         check_is_fitted(self, 'components_')
         return self.components_
+
+    def _check_transformer(self, transformer):
+        """Check that transformer has attribute ``components_``.
+
+        Parameters
+        ----------
+        transformer : object
+        """
+        if not hasattr(transformer, 'components_'):
+            raise AttributeError('The transformer does not expose '
+                                 '"components_" attribute')
