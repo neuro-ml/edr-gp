@@ -53,12 +53,12 @@ class EffectiveDimensionalityReduction(BaseEDR):
         n_components = ``dr_transformer.n_components``
     """
 
-    def __init__(self, estimator, dr_transformer, normalize=True,
-                 preprocessor=None):
+    def __init__(self, estimator, dr_transformer, n_components=None, step=None,
+                 normalize=True, preprocessor=None):
         self.normalize = normalize
         self.preprocessor = preprocessor
         super(EffectiveDimensionalityReduction, self).__init__(
-            estimator, dr_transformer)
+            estimator, dr_transformer, n_components, step)
 
     def fit(self, X, y=None, **opt_kws):
         """Fit the model with X, y

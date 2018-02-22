@@ -27,7 +27,8 @@ def get_2d_data(mean=None):
 def test_mi(mean):
     X, y = get_2d_data(mean)
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(n_components=1), True)
+                                           CustomPCA(), n_components=1, 
+                                           normalize=True)
     edr.fit(X, y)
     mi = mutual_info_regression(edr.transform(X), y)[0]
     assert mi > 1
@@ -37,7 +38,7 @@ def test_mi(mean):
 def test_translation(normalize):
     X, y = get_2d_data(mean=[10, -10])
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(n_components=1), 
+                                           CustomPCA(), n_components=1, 
                                            normalize)
     edr.fit(X, y)
     components_shift = edr.components_
@@ -56,7 +57,8 @@ def test_preprocess(mean):
     y = get_tanh_targets(X, [0.5, 0.5, 0, 0])
 
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(n_components=1), True,
+                                           CustomPCA(), n_components=1, 
+                                           normalize=True,
                                            PCA(n_components=2))
     edr.fit(X, y)
     # print(edr.components_)
@@ -66,7 +68,8 @@ def test_preprocess(mean):
 
     X -= X.mean(0)
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           PCA(n_components=1), True,
+                                           CustomPCA(), n_components=1, 
+                                           normalize=True,
                                            PCA(n_components=2))
     edr.fit(X, y)
     components_no_shift = edr.components_
