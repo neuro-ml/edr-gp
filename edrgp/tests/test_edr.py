@@ -39,7 +39,7 @@ def test_translation(normalize):
     X, y = get_2d_data(mean=[10, -10])
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
                                            CustomPCA(), n_components=1, 
-                                           normalize)
+                                           normalize=normalize)
     edr.fit(X, y)
     components_shift = edr.components_
 
