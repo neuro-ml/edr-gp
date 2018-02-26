@@ -123,8 +123,8 @@ def discrepancy(B, V):
     Returns
     -------
     """
-    return norm(np.dot(B.dot(B.T), 
-                       (np.eye(B.shape[0]) - V.dot(V.T)))) / B.shape[1]
+    return np.linalg.norm(np.dot(B.dot(B.T), 
+                          (np.eye(B.shape[0]) - V.dot(V.T)))) / B.shape[1]
 
 
 class CustomPCA(BaseEstimator, TransformerMixin):
