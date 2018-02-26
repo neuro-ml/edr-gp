@@ -127,6 +127,10 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         if self.kernels is None:
             return self.kernels
 
+        if hasattr(self.kernels, '__module__'):
+            if self.kernels.__module__.startswith('GPy.kern'):
+                return self.kernels
+
         if isinstance(self.kernels, str):
             self.kernels = [self.kernels]
 
