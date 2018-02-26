@@ -90,13 +90,15 @@ class BaseEDR(TransformerMixin):
             mes = "Step should be None or int > 0 or float from 0 to 1"
             raise ValueError(mes)
 
-        self.continue_iteration = True
         self.components_ = None
+        self.continue_iteration = True
+        self.num_iter = 0
         X_proj = X.copy()
         while self.continue_iteration:
             self._fit_estimator(X_proj, y, **opt_kws)
             self._fit_dr_transformer(X_proj)
-            X_proj = self.transform(X_proj)
+            X_proj = self.transform(X)
+            self.num_iter += 1
 
         self._last_fit(X_proj, y, **opt_kws)
         return self
@@ -104,12 +106,14 @@ class BaseEDR(TransformerMixin):
     def refit(self, refit_transformer):
         check_is_fitted(self, 'components_')
         self.refit_transformer_ = clone(refit_transformer)
-        self.refit_transformer_.fit(self.gradients_)
+        self.refit_transformer_.fit(self._gradients_)
         self._check_transformer(self.refit_transformer_)
         self.refit_components_ = deepcopy(self.refit_transformer_.components_)
         self.refit_components_ = (
             self.refit_components_/np.linalg.norm(self.refit_components_,
                                                   axis=1).reshape(-1, 1))
+        self.refit_subspace_variance_ratio_ = subspace_variance_ratio(
+            self._gradients_, np.linalg.qr(self.refit_components_.T)[0])
         return self
 
     def _last_fit(self, X, y, **opt_kws):
@@ -135,9 +139,9 @@ class BaseEDR(TransformerMixin):
         check_is_fitted(self, 'estimator_')
         grad = self._get_estimator_gradients(X)
         self.subspace_gradients_ = grad
-        self.gradients_ = np.dot(grad, self.components_)
+        self._gradients_ = np.dot(grad, self.components_)
         self.subspace_variance_ratio_ = subspace_variance_ratio(
-            self.gradients_, self.components_.T)
+            self._gradients_, self.components_.T)
         return self
 
     def _fit_estimator(self, X, y, **opt_kws):
@@ -181,7 +185,9 @@ class BaseEDR(TransformerMixin):
             Returns self.
         """
         check_is_fitted(self, 'estimator_')
+
         grad = self._get_estimator_gradients(X)
+
         self.dr_transformer_ = clone(self.dr_transformer)
         self.dr_transformer_.fit(grad)
         self._check_transformer(self.dr_transformer_)
@@ -309,4 +315,3 @@ class ExtendedEDR(BaseEDR):
 
     def transform(self, X):
         super(ExtendedEDR, self).transform(X, refitted=True)
-
