@@ -36,6 +36,27 @@ def get_beta_inputs(sample_size, ndim, tau=1):
     return 2*np.random.beta(1, tau, size=(sample_size, ndim))-1
 
 
+def get_edr_target(X, sigma=None):
+    """"Generates target for different dimensions
+
+    n=1 => g(u) = u sin(sqrt(5) u)
+    n=2 => g(u1, u2) = (u1^3+u2)(u1-u2^3)
+    n=3 => g(u1, u2, u3) = (u1^3+u2)(u1-u2^3)+u3*u3_coef
+    """
+    effective_ndim = X.shape[1]
+
+    if effective_ndim == 1:
+        result = np.array([u*np.sin(np.sqrt(5)*u) for u in X])
+    if effective_ndim == 2:
+        result = np.array([(u1 ** 3+u2)*(u1-u2 ** 3) for u1, u2 in X])
+    if effective_ndim == 3:
+        result = np.array([(u1 ** 3+u2)*(u1-u2 ** 3)+u3 for u1, u2, u3 in X])
+    result = result.ravel()
+    if sigma is not None:
+        result += sigma * np.random.randn(result.size)
+    return result
+
+
 def get_branin_targets(X, noise_std=None):
     '''Branin function generator
     It's a smooth 2D function which is frequently used as a target for
