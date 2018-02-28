@@ -19,6 +19,14 @@ class EffectiveDimensionalityReduction(BaseEDR):
     dr_transformer : object
         A linear dimensionnality reduction method that provides
         information about new axes through ``components_`` attribute.
+    n_components : int (default=None)
+        Number of components to left after fitting. If None then 
+        n_components = n_features
+    step : int, float (default=None)
+        Number of components to drop at each iteration. If step is float
+        then number of components to drop at each iteration defines as 
+        number of worst components with sum of subspace variance lower then 
+        1 - step. If step is None only one iteration is applied.
     normalize : bool, optional (default=True)
         If True input data will be normalized by ``StandardScaler``
         before fitting.
@@ -43,14 +51,33 @@ class EffectiveDimensionalityReduction(BaseEDR):
         ``StandardScaler`` fitted to raw data.
     preprocessor_ : object
         Preprocessor fitted to normalized data.
-    subspace_var_: array, shape (n_components, )
+    subspace_variance_: array, shape (n_components, )
         Subspace variance calculated as tr(X.T * X) - tr(Y_i.T * Y_i)
         where Y_i=XU_i, U_i - orthogonal complement for components_.T[:, :i],
         i =  1, ..., n_components
         n_components = ``dr_transformer.n_components``
-    subspace_var_ratio_: array, (n_components, )
+    subspace_variance_ratio_: array, (n_components, )
         Subspace variance ratio calculated as subspace_var_/tr(X.T * X)
         n_components = ``dr_transformer.n_components``
+
+    If `refit` method has been applied the following attributes
+    are also presented:
+
+    refit_transformer_ : object
+        `refit_transformer` fitted on gradients estimated during `fit`.
+        Attribute is present only if the `refit` has been applied.
+    refit_components_ : array, shape (n_refit_components, n_features)
+        New axes in feature space, representing the directions of
+        maximum variance of the target.
+        n_components = ``refit_transformer.n_components``
+    refit_subspace_variance_: array, shape (n_components, )
+        Subspace variance calculated as tr(X.T * X) - tr(Y_i.T * Y_i)
+        where Y_i=XU_i, U_i - orthogonal complement for components_.T[:, :i],
+        i =  1, ..., n_components
+        n_components = ``refit_transformer.n_components``
+    refit_subspace_variance_ratio_: array, (n_components, )
+        Subspace variance ratio calculated as subspace_var_/tr(X.T * X)
+        n_components = ``refit_transformer.n_components``
     """
 
     def __init__(self, estimator, dr_transformer, n_components=None, step=None,

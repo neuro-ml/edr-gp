@@ -19,6 +19,14 @@ class BaseEDR(TransformerMixin):
     dr_transformer : objec
         A linear dimensionnality reduction method that provides
         information about new axes through ``components_`` attribute.
+    n_components : int (default=None)
+        Number of components to left after fitting. If None then 
+        n_components = n_features
+    step : int, float (default=None)
+        Number of components to drop at each iteration. If step is float
+        then number of components to drop at each iteration defines as 
+        number of worst components with sum of subspace variance lower then 
+        1 - step. If step is None only one iteration is applied.
 
     Attributes
     ----------
@@ -33,14 +41,34 @@ class BaseEDR(TransformerMixin):
         Estimator fitted to preprocessed data.
     dr_transformer_ : object
         Dr_transformer fitted to gradients.
-    subspace_var_: array, shape (n_components, )
+    subspace_variance_: array, shape (n_components, )
         Subspace variance calculated as tr(X.T * X) - tr(Y_i.T * Y_i)
         where Y_i=XU_i, U_i - orthogonal complement for components_.T[:, :i],
         i =  1, ..., n_components
         n_components = ``dr_transformer.n_components``
-    subspace_var_ratio_: array, (n_components, )
+    subspace_variance_ratio_: array, (n_components, )
         Subspace variance ratio calculated as subspace_var_/tr(X.T * X)
         n_components = ``dr_transformer.n_components``
+
+    If `refit` method has been applied the following attributes
+    are also presented:
+
+    refit_transformer_ : object
+        `refit_transformer` fitted on gradients estimated during `fit`.
+        Attribute is present only if the `refit` has been applied.
+    refit_components_ : array, shape (n_refit_components, n_features)
+        New axes in feature space, representing the directions of
+        maximum variance of the target.
+        n_components = ``refit_transformer.n_components``
+    refit_subspace_variance_: array, shape (n_components, )
+        Subspace variance calculated as tr(X.T * X) - tr(Y_i.T * Y_i)
+        where Y_i=XU_i, U_i - orthogonal complement for components_.T[:, :i],
+        i =  1, ..., n_components
+        n_components = ``refit_transformer.n_components``
+    refit_subspace_variance_ratio_: array, (n_components, )
+        Subspace variance ratio calculated as subspace_var_/tr(X.T * X)
+        n_components = ``refit_transformer.n_components``
+
     """
 
     def __init__(self, estimator, dr_transformer, n_components=None,
@@ -104,6 +132,23 @@ class BaseEDR(TransformerMixin):
         return self
 
     def refit(self, refit_transformer):
+        """Compute new components using gradients estimated during fit.
+
+        It uses gradients estimated during fit and finds the right subspace 
+        for them using `refit_transformer`. To transform data with 
+        found components use `transform` with `refiitted=True`
+
+        Parameters
+        ----------
+        refit_transformer : object
+            Transformer to fit with gradients estimated on fit.
+            It should have attribute `components_` after fit.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
         check_is_fitted(self, 'components_')
         self.refit_transformer_ = clone(refit_transformer)
         self.refit_transformer_.fit(self._gradients_)
@@ -112,8 +157,10 @@ class BaseEDR(TransformerMixin):
         self.refit_components_ = (
             self.refit_components_/np.linalg.norm(self.refit_components_,
                                                   axis=1).reshape(-1, 1))
-        self.refit_subspace_variance_ratio_ = subspace_variance_ratio(
-            self._gradients_, np.linalg.qr(self.refit_components_.T)[0])
+        (self.refit_subspace_variance_, 
+         self.refit_subspace_variance_ratio_) = subspace_variance_ratio(
+                                                    self._gradients_, 
+                                                    self.refit_components_.T)
         return self
 
     def _last_fit(self, X, y, **opt_kws):
@@ -140,8 +187,10 @@ class BaseEDR(TransformerMixin):
         grad = self._get_estimator_gradients(X)
         self.subspace_gradients_ = grad
         self._gradients_ = np.dot(grad, self.components_)
-        self.subspace_variance_ratio_ = subspace_variance_ratio(
-            self._gradients_, self.components_.T)
+        (self.subspace_variance_, 
+         self.subspace_variance_ratio_) = subspace_variance_ratio(
+                                                self._gradients_, 
+                                                self.components_.T)
         return self
 
     def _fit_estimator(self, X, y, **opt_kws):
@@ -245,7 +294,9 @@ class BaseEDR(TransformerMixin):
         X : array-like, shape (n_samples, n_features)
             New data, where n_samples in the number of samples
             and n_features is the number of features.
-
+        refitted : bool (False)
+            Whether to transform using refit_transformer components.
+            May be set to `True` only if `refit` was applied before
         Returns
         -------
         X_new : ndarray, shape (n_samples, n_components)
