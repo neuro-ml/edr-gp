@@ -19,6 +19,14 @@ class EffectiveDimensionalityReduction(BaseEDR):
     dr_transformer : object
         A linear dimensionnality reduction method that provides
         information about new axes through ``components_`` attribute.
+    n_components : int (default=None)
+        Number of components to left after fitting. If None then 
+        n_components = n_features
+    step : int, float (default=None)
+        Number of components to drop at each iteration. If step is float
+        then number of components to drop at each iteration defines as 
+        number of worst components with sum of subspace variance lower then 
+        1 - step. If step is None only one iteration is applied.
     normalize : bool, optional (default=True)
         If True input data will be normalized by ``StandardScaler``
         before fitting.
@@ -43,22 +51,41 @@ class EffectiveDimensionalityReduction(BaseEDR):
         ``StandardScaler`` fitted to raw data.
     preprocessor_ : object
         Preprocessor fitted to normalized data.
-    subspace_var_: array, shape (n_components, )
+    subspace_variance_: array, shape (n_components, )
         Subspace variance calculated as tr(X.T * X) - tr(Y_i.T * Y_i)
         where Y_i=XU_i, U_i - orthogonal complement for components_.T[:, :i],
         i =  1, ..., n_components
         n_components = ``dr_transformer.n_components``
-    subspace_var_ratio_: array, (n_components, )
+    subspace_variance_ratio_: array, (n_components, )
         Subspace variance ratio calculated as subspace_var_/tr(X.T * X)
         n_components = ``dr_transformer.n_components``
+
+    If `refit` method has been applied the following attributes
+    are also presented:
+
+    refit_transformer_ : object
+        `refit_transformer` fitted on gradients estimated during `fit`.
+        Attribute is present only if the `refit` has been applied.
+    refit_components_ : array, shape (n_refit_components, n_features)
+        New axes in feature space, representing the directions of
+        maximum variance of the target.
+        n_components = ``refit_transformer.n_components``
+    refit_subspace_variance_: array, shape (n_components, )
+        Subspace variance calculated as tr(X.T * X) - tr(Y_i.T * Y_i)
+        where Y_i=XU_i, U_i - orthogonal complement for components_.T[:, :i],
+        i =  1, ..., n_components
+        n_components = ``refit_transformer.n_components``
+    refit_subspace_variance_ratio_: array, (n_components, )
+        Subspace variance ratio calculated as subspace_var_/tr(X.T * X)
+        n_components = ``refit_transformer.n_components``
     """
 
-    def __init__(self, estimator, dr_transformer, normalize=True,
-                 preprocessor=None):
+    def __init__(self, estimator, dr_transformer, n_components=None, step=None,
+                 normalize=True, preprocessor=None):
         self.normalize = normalize
         self.preprocessor = preprocessor
         super(EffectiveDimensionalityReduction, self).__init__(
-            estimator, dr_transformer)
+            estimator, dr_transformer, n_components, step)
 
     def fit(self, X, y=None, **opt_kws):
         """Fit the model with X, y
@@ -81,6 +108,9 @@ class EffectiveDimensionalityReduction(BaseEDR):
               self).fit(X, y, **opt_kws)
         if self.normalize is True:
             self.components_ = np.dot(self.components_, self._reverse_scaling_)
+            if hasattr(self, 'refit_components_'):
+                self.refit_components_ = np.dot(self.refit_components_,
+                                                self._reverse_scaling_)
         return self
 
     def _preprocessing_fit(self, X, transform=True):
@@ -116,6 +146,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
             self._check_transformer(self.preprocessor_)
             # save preprocesing map
             self._preprocessing_ = self.preprocessor_.components_
+
         return X_preprocessed if transform else None
 
     def _preprocessing_transform(self, X):
@@ -135,9 +166,11 @@ class EffectiveDimensionalityReduction(BaseEDR):
         if self.normalize is True:
             check_is_fitted(self, 'scaler_')
             X = self.scaler_.transform(X)
-        if self.preprocessor is not None:
-            check_is_fitted(self, 'preprocessor_')
-            X = self.preprocessor_.transform(X)
+        # if self.preprocessor is not None:
+        #     check_is_fitted(self, 'preprocessor_')
+        #     X = self.preprocessor_.transform(X)
+            X = np.dot(X, self._scaling_)
+        X = np.dot(X, self.components_.T)
         return X
 
     def get_estimator_gradients(self, X):
@@ -154,9 +187,11 @@ class EffectiveDimensionalityReduction(BaseEDR):
             Calculated gradients.
         """
         X = check_array(X)
+        # X_transform = self.transform(X)
+        # subsp_grads = self.estimator_.predict_gradient(X_transform)
         return self._get_estimator_gradients(X, True)
 
-    def _get_estimator_gradients(self, X, prepocess=False):
+    def _get_estimator_gradients(self, X, preprocessing_transform=False):
         """Returns gradients of the sample
 
         Parameters
@@ -171,13 +206,17 @@ class EffectiveDimensionalityReduction(BaseEDR):
         grad : ndarray, shape (n_samples, n_features)
             Calculated gradients in the non-preprocessed space.
         """
-        if prepocess:
+        if preprocessing_transform:
             X = self._preprocessing_transform(X)
         check_is_fitted(self, 'estimator_')
         grad = self.estimator_.predict_gradient(X)
-        if self.preprocessor is not None:
+        if (self.preprocessor is not None and
+            self.num_iter == 0 and
+                not preprocessing_transform):
             check_is_fitted(self, 'preprocessor_')
             grad = np.dot(grad, self._preprocessing_)
+        if preprocessing_transform:
+            grad = np.dot(grad, self.components_)
         return grad
 
     @property
@@ -197,3 +236,16 @@ class EffectiveDimensionalityReduction(BaseEDR):
         if self.normalize is True:
             importances_ = np.dot(importances_, self._scaling_)
         return importances_
+
+    def transform(self, X, refitted=False):
+        check_is_fitted(self, 'components_')
+        X = check_array(X)
+        if refitted:
+            check_is_fitted(self, ['refit_transformer_', 'refit_components_'])
+            return np.dot(X, self.refit_components_.T)
+        if hasattr(self, '_gradients_'):
+            components = self.components_
+        else:
+            components = (self.components_ if self.preprocessor is None else
+                          np.dot(self.components_, self._preprocessing_.T))
+        return np.dot(X, components.T)
