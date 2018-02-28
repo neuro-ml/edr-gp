@@ -157,10 +157,10 @@ class BaseEDR(TransformerMixin):
         self.refit_components_ = (
             self.refit_components_/np.linalg.norm(self.refit_components_,
                                                   axis=1).reshape(-1, 1))
-        (self.refit_subspace_variance_, 
+        (self.refit_subspace_variance_,
          self.refit_subspace_variance_ratio_) = subspace_variance_ratio(
-                                                    self._gradients_, 
-                                                    self.refit_components_.T)
+            self._gradients_,
+            self.refit_components_.T)
         return self
 
     def _last_fit(self, X, y, **opt_kws):
@@ -187,10 +187,10 @@ class BaseEDR(TransformerMixin):
         grad = self._get_estimator_gradients(X)
         self.subspace_gradients_ = grad
         self._gradients_ = np.dot(grad, self.components_)
-        (self.subspace_variance_, 
+        (self.subspace_variance_,
          self.subspace_variance_ratio_) = subspace_variance_ratio(
-                                                self._gradients_, 
-                                                self.components_.T)
+            self._gradients_,
+            self.components_.T)
         return self
 
     def _fit_estimator(self, X, y, **opt_kws):
@@ -243,7 +243,7 @@ class BaseEDR(TransformerMixin):
         components = deepcopy(self.dr_transformer_.components_)
 
         if self.adaptive_step:
-            var_ratio_ = subspace_variance_ratio(grad, components.T)
+            _, var_ratio_ = subspace_variance_ratio(grad, components.T)
             n_components = np.sum(np.cumsum(var_ratio_) < self.step_,
                                   dtype=int) + 1
             if n_components == grad.shape[1]:

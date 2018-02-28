@@ -52,7 +52,7 @@ def subspace_variance_ratio(X, V):
         subspace_variance_ = np.linalg.norm(X.dot(V_orthonormalized))
 
     subspace_variance_ratio_ = (subspace_variance_/np.linalg.norm(X)) ** 2
-    return susbspace_variance_, subspace_variance_ratio_
+    return subspace_variance_, subspace_variance_ratio_
 
 
 def discrepancy(B, V):
