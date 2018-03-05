@@ -118,6 +118,7 @@ class BaseEDR(TransformerMixin):
             mes = "Step should be None or int > 0 or float from 0 to 1"
             raise ValueError(mes)
 
+        self._gradients_ = None
         self.components_ = None
         self.continue_iteration = True
         self.num_iter = 0
