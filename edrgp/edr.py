@@ -243,7 +243,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         if refitted:
             check_is_fitted(self, ['refit_transformer_', 'refit_components_'])
             return np.dot(X, self.refit_components_.T)
-        if hasattr(self, '_gradients_'):
+        if hasattr(self, '_gradients_') and self._gradients_ is not None:
             components = self.components_
         else:
             components = (self.components_ if self.preprocessor is None else
