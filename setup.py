@@ -1,5 +1,5 @@
 # Always prefer setuptools over distutils
-from setuptools import setup
+from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
@@ -18,7 +18,7 @@ description = 'Effective Dimensionality Reduction based on Gaussian Processes'
 
 setup(
     name='edr-gp',
-    version='0.0.4',
+    version='0.2.2',
     description=description,
     long_description=long_description,
     url='https://github.com/neuro-ml/edr-gp',
@@ -38,6 +38,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.5',
     ],
-    packages=['edrgp'],
+    packages=find_packages(include=('edrgp')),
     install_requires=reqs,
 )
