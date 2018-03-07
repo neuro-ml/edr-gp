@@ -18,7 +18,7 @@ description = 'Effective Dimensionality Reduction based on Gaussian Processes'
 
 setup(
     name='edr-gp',
-    version='0.2.3',
+    version='0.2.5',
     description=description,
     long_description=long_description,
     url='https://github.com/neuro-ml/edr-gp',
@@ -38,7 +38,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.5',
     ],
-    packages=find_packages(include=('edrgp')),
+    packages=find_packages(include=('edrgp',)),
     include_package_data=True,
     install_requires=reqs,
 )
