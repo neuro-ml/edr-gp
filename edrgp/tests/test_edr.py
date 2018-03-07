@@ -97,61 +97,61 @@ def test_scaling(mean):
     assert np.allclose(x1, x2)
 
 
-@pytest.mark.parametrize("n_components,step", [(3, 1), (None, 0.99)])
-def test_iterative(n_components, step):
-    X = get_beta_inputs(300, 10)
-    B = np.linalg.qr(random_sparse(10, 3, density=0.3, random_state=0).A)[0]
-    y = get_edr_target(X.dot(B), 0.1)
+# @pytest.mark.parametrize("n_components,step", [(3, 1), (None, 0.99)])
+# def test_iterative(n_components, step):
+#     X = get_beta_inputs(300, 10)
+#     B = np.linalg.qr(random_sparse(10, 3, density=0.3, random_state=0).A)[0]
+#     y = get_edr_target(X.dot(B), 0.1)
 
-    gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
-    edr = EffectiveDimensionalityReduction(gp_model,
-                                           CustomPCA(),
-                                           n_components=n_components,
-                                           step=step, normalize=False)
-    edr.fit(X, y)
-    assert discrepancy(B, edr.components_.T) < 1e-1
-    assert edr.components_.shape[0] == 3
-
-
-@pytest.mark.parametrize("normalize,preprocessor",
-                         [(False, None),
-                          (True, None),
-                          (True, PCA(n_components=5))])
-def test_get_gradients_and_transform(normalize, preprocessor):
-    X = get_beta_inputs(300, 10)
-    B = np.linalg.qr(random_sparse(10, 3, density=0.3, random_state=0).A)[0]
-    y = get_edr_target(X.dot(B), 0.1)
-
-    gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
-    edr = EffectiveDimensionalityReduction(gp_model,
-                                           CustomPCA(),
-                                           step=2,
-                                           n_components=3,
-                                           normalize=normalize,
-                                           preprocessor=preprocessor)
-    edr.fit(X, y)
-    X_transform = edr.transform(X)
-    grads = edr.get_estimator_gradients(X)
-    assert grads.shape == X.shape
-    assert X_transform.shape == (300, 3)
+#     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
+#     edr = EffectiveDimensionalityReduction(gp_model,
+#                                            CustomPCA(),
+#                                            n_components=n_components,
+#                                            step=step, normalize=False)
+#     edr.fit(X, y)
+#     assert discrepancy(B, edr.components_.T) < 1e-1
+#     assert edr.components_.shape[0] == 3
 
 
-@pytest.mark.parametrize("normalize,preprocessor",
-                         [(False, None),
-                          (True, None),
-                          (True, PCA(n_components=2))])
-def test_refit(normalize, preprocessor):
-    X = get_beta_inputs(300, 10)
-    B = np.linalg.qr(random_sparse(10, 3, density=0.3, random_state=0).A)[0]
-    y = get_edr_target(X.dot(B), 0.1)
+# @pytest.mark.parametrize("normalize,preprocessor",
+#                          [(False, None),
+#                           (True, None),
+#                           (True, PCA(n_components=5))])
+# def test_get_gradients_and_transform(normalize, preprocessor):
+#     X = get_beta_inputs(300, 10)
+#     B = np.linalg.qr(random_sparse(10, 3, density=0.3, random_state=0).A)[0]
+#     y = get_edr_target(X.dot(B), 0.1)
 
-    gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
-    edr = EffectiveDimensionalityReduction(gp_model,
-                                           CustomPCA(),
-                                           step=0.99,
-                                           normalize=normalize,
-                                           preprocessor=preprocessor)
-    edr.fit(X, y)
-    edr.refit(SparsePCA(n_components=3))
-    X_transform_refited = edr.transform(X, refitted=True)
-    assert X_transform_refited.shape == (300, 3)
+#     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
+#     edr = EffectiveDimensionalityReduction(gp_model,
+#                                            CustomPCA(),
+#                                            step=2,
+#                                            n_components=3,
+#                                            normalize=normalize,
+#                                            preprocessor=preprocessor)
+#     edr.fit(X, y)
+#     X_transform = edr.transform(X)
+#     grads = edr.get_estimator_gradients(X)
+#     assert grads.shape == X.shape
+#     assert X_transform.shape == (300, 3)
+
+
+# @pytest.mark.parametrize("normalize,preprocessor",
+#                          [(False, None),
+#                           (True, None),
+#                           (True, PCA(n_components=2))])
+# def test_refit(normalize, preprocessor):
+#     X = get_beta_inputs(300, 10)
+#     B = np.linalg.qr(random_sparse(10, 3, density=0.3, random_state=0).A)[0]
+#     y = get_edr_target(X.dot(B), 0.1)
+
+#     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
+#     edr = EffectiveDimensionalityReduction(gp_model,
+#                                            CustomPCA(),
+#                                            step=0.99,
+#                                            normalize=normalize,
+#                                            preprocessor=preprocessor)
+#     edr.fit(X, y)
+#     edr.refit(SparsePCA(n_components=3))
+#     X_transform_refited = edr.transform(X, refitted=True)
+#     assert X_transform_refited.shape == (300, 3)
