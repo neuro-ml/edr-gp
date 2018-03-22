@@ -74,7 +74,7 @@ def plot_data(X, y):
     plt.figure(figsize=[8, 5])
     plt.scatter(X[:, 0], X[:, 1], c=y, cmap=CMAP)
     plt.colorbar(label='Target variable')
-    plt.title('The dataset')
+    plt.title('The dataset', fontsize=18)
     plt.xlabel('Feature 1', fontsize=16)
     plt.ylabel('Feature 2', fontsize=16)
 
