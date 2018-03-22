@@ -78,7 +78,7 @@ def discrepancy(B, V):
                                                     V.dot(V.T)))) / B.shape[1]
 
 
-class CustomPCA(BaseEstimator, TransformerMixin):
+class SVDTransformer(BaseEstimator, TransformerMixin):
     """PCA without centering and scaling
 
     Linear dimensionality reduction using Singular Value 

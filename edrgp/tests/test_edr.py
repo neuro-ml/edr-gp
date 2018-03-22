@@ -10,7 +10,7 @@ from edrgp.datasets import (get_gaussian_inputs,
 from sklearn.feature_selection import mutual_info_regression
 from sklearn.decomposition import PCA, SparsePCA
 from sklearn.preprocessing import StandardScaler
-from edrgp.utils import CustomPCA
+from edrgp.utils import SVDTransformer
 from edrgp.utils import discrepancy
 from scipy.sparse import random as random_sparse
 
@@ -31,7 +31,7 @@ def get_2d_data(mean=None):
 def test_mi(mean):
     X, y = get_2d_data(mean)
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1,
+                                           SVDTransformer(), n_components=1,
                                            normalize=True)
     edr.fit(X, y)
     mi = mutual_info_regression(edr.transform(X), y)[0]
@@ -42,7 +42,7 @@ def test_mi(mean):
 def test_translation(normalize):
     X, y = get_2d_data(mean=[10, -10])
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1,
+                                           SVDTransformer(), n_components=1,
                                            normalize=normalize)
     edr.fit(X, y)
     components_shift = edr.components_
@@ -61,7 +61,7 @@ def test_preprocess(mean):
     y = get_tanh_targets(X, [0.5, 0.5, 0, 0])
 
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1,
+                                           SVDTransformer(), n_components=1,
                                            normalize=True,
                                            preprocessor=PCA(n_components=2))
     edr.fit(X, y)
@@ -72,7 +72,7 @@ def test_preprocess(mean):
 
     X -= X.mean(0)
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1,
+                                           SVDTransformer(), n_components=1,
                                            normalize=True,
                                            preprocessor=PCA(n_components=2))
     edr.fit(X, y)
@@ -85,12 +85,12 @@ def test_scaling(mean):
     X, y = get_2d_data(mean)
     # EDR with scaling
     edr_sc = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                              CustomPCA(), normalize=True)
+                                              SVDTransformer(), normalize=True)
     edr_sc.fit(X, y)
     x1 = edr_sc.transform(X-np.mean(X, axis=0))
     # EDR without scaling
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), normalize=False)
+                                           SVDTransformer(), normalize=False)
     X_scaled = StandardScaler().fit_transform(X)
     x2 = edr.fit_transform(X_scaled, y)
 
@@ -105,7 +105,7 @@ def test_scaling(mean):
 
 #     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
 #     edr = EffectiveDimensionalityReduction(gp_model,
-#                                            CustomPCA(),
+#                                            SVDTransformer(),
 #                                            n_components=n_components,
 #                                            step=step, normalize=False)
 #     edr.fit(X, y)
@@ -124,7 +124,7 @@ def test_scaling(mean):
 
 #     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
 #     edr = EffectiveDimensionalityReduction(gp_model,
-#                                            CustomPCA(),
+#                                            SVDTransformer(),
 #                                            step=2,
 #                                            n_components=3,
 #                                            normalize=normalize,
@@ -147,7 +147,7 @@ def test_scaling(mean):
 
 #     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
 #     edr = EffectiveDimensionalityReduction(gp_model,
-#                                            CustomPCA(),
+#                                            SVDTransformer(),
 #                                            step=0.99,
 #                                            normalize=normalize,
 #                                            preprocessor=preprocessor)
