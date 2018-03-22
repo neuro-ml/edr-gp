@@ -80,8 +80,8 @@ class EffectiveDimensionalityReduction(BaseEDR):
         n_components = ``refit_transformer.n_components``
     """
 
-    def __init__(self, estimator, dr_transformer, n_components=None, step=None,
-                 normalize=True, preprocessor=None):
+    def __init__(self, estimator=None, dr_transformer=None, n_components=None, 
+                 step=None, normalize=True, preprocessor=None):
         self.normalize = normalize
         self.preprocessor = preprocessor
         super(EffectiveDimensionalityReduction, self).__init__(

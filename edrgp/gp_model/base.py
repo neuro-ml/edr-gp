@@ -16,10 +16,11 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
     Parameters
     ----------
-    kernels : str or list of str, optional
+    kernels : str or list of str or object, optional
         Kernel for `GPy` model.
         If string, that kernel should be in `GPy.kern`.
         If list of str, the sum of kernels is used.
+        It is also possible to use GPy.kern objects.
         Default="RBF".
     kernel_options : dict or list of dict, optional
         Kernel options to be set for kernels.
@@ -133,6 +134,9 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         if isinstance(self.kernels, str):
             self.kernels = [self.kernels]
+
+        if isinstance(self.kernel_options, dict):
+            self.kernel_options = [self.kernel_options]
 
         kernels = [getattr(gpy_kern, kern) for kern in self.kernels]
         input_dim = {'input_dim': self.n_features_}

@@ -2,13 +2,13 @@
 
 import numpy as np
 from copy import deepcopy
-from sklearn.base import TransformerMixin, clone
+from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted
 from .utils import subspace_variance_ratio
 
 
-class BaseEDR(TransformerMixin):
+class BaseEDR(BaseEstimator, TransformerMixin):
     """Base class for effective dimensionality reduction
 
     Parameters
@@ -21,7 +21,7 @@ class BaseEDR(TransformerMixin):
         information about new axes through ``components_`` attribute.
     n_components : int (default=None)
         Number of components to left after fitting. If None then 
-        n_components = n_features
+        n_components = n_features	
     step : int, float (default=None)
         Number of components to drop at each iteration. If step is float
         then number of components to drop at each iteration defines as 
@@ -71,7 +71,7 @@ class BaseEDR(TransformerMixin):
 
     """
 
-    def __init__(self, estimator, dr_transformer, n_components=None,
+    def __init__(self, estimator=None, dr_transformer=None, n_components=None,
                  step=None):
         self.estimator = estimator
         self.dr_transformer = dr_transformer
@@ -94,6 +94,11 @@ class BaseEDR(TransformerMixin):
         self : object
             Returns self.
         """
+        if self.estimator is None:
+        	raise ValueError("Estimator should be speciified")
+
+        if self.dr_transformer is None:
+        	raise ValueError("dr_transformer should be specified")
 
         if self.n_components is None:
             self.n_components_ = X.shape[1]
@@ -137,7 +142,7 @@ class BaseEDR(TransformerMixin):
 
         It uses gradients estimated during fit and finds the right subspace 
         for them using `refit_transformer`. To transform data with 
-        found components use `transform` with `refiitted=True`
+        found components use `transform` with `refitted=True`
 
         Parameters
         ----------
