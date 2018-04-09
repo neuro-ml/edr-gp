@@ -42,14 +42,6 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         Number of features in fitted data.
     """
 
-    def __init__(self, kernels=None, kernel_options=None, Y_metadata=None,
-                 mean_function=None, method='optimize'):
-        self.kernels = kernels
-        self.kernel_options = kernel_options
-        self.Y_metadata = Y_metadata
-        self.mean_function = mean_function
-        self.method = method
-
     def fit(self, X, y, **opt_kws):
         """Fit the model according to the given training data
 
