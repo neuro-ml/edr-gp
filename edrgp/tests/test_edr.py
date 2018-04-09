@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from copy import deepcopy
 from edrgp.gp_model.regression import GaussianProcessRegressor
+from edrgp.gp_model.regression import SparseGaussianProcessRegressor
 from edrgp.edr import EffectiveDimensionalityReduction
 from edrgp.datasets import (get_gaussian_inputs,
                             get_tanh_targets,
@@ -13,6 +14,7 @@ from sklearn.preprocessing import StandardScaler
 from edrgp.utils import SVDTransformer
 from edrgp.utils import discrepancy
 from scipy.sparse import random as random_sparse
+import GPy
 
 
 def get_2d_data(mean=None):
@@ -25,6 +27,25 @@ def get_2d_data(mean=None):
         mean=mean)
     y = get_tanh_targets(X, [0.5, 0.5])
     return X, y
+
+
+def test_sparse_regression():
+    np.random.seed(101)
+    N = 50
+    noise_var = 0.05
+
+    X = np.linspace(0,10,50)[:,None]
+    k = GPy.kern.RBF(1)
+    y = np.random.multivariate_normal(
+            np.zeros(N),k.K(X)+np.eye(N)*np.sqrt(noise_var)).reshape(-1,1)
+
+    gp = GaussianProcessRegressor()
+    gp.fit(X, y)
+
+    sgp = SparseGaussianProcessRegressor(num_inducing=12)
+    sgp.fit(X, y)
+
+    assert abs(gp.estimator_.log_likelihood() - sgp.estimator_.log_likelihood()[0][0]) < 0.5 
 
 
 @pytest.mark.parametrize("mean", [[0, 0], [10, -10]])
@@ -95,6 +116,7 @@ def test_scaling(mean):
     x2 = edr.fit_transform(X_scaled, y)
 
     assert np.allclose(x1, x2)
+
 
 
 # @pytest.mark.parametrize("n_components,step", [(3, 1), (None, 0.99)])
