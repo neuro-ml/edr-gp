@@ -18,7 +18,7 @@ description = 'Effective Dimensionality Reduction based on Gaussian Processes'
 
 setup(
     name='edr-gp',
-    version='0.2.5',
+    version='0.2.6',
     description=description,
     long_description=long_description,
     url='https://github.com/neuro-ml/edr-gp',
