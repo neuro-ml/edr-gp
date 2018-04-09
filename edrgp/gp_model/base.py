@@ -16,10 +16,11 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
     Parameters
     ----------
-    kernels : str or list of str, optional
+    kernels : str or list of str or object, optional
         Kernel for `GPy` model.
         If string, that kernel should be in `GPy.kern`.
         If list of str, the sum of kernels is used.
+        It is also possible to use GPy.kern objects.
         Default="RBF".
     kernel_options : dict or list of dict, optional
         Kernel options to be set for kernels.
@@ -40,14 +41,6 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
     n_features_ : int
         Number of features in fitted data.
     """
-
-    def __init__(self, kernels=None, kernel_options=None, Y_metadata=None,
-                 mean_function=None, method='optimize'):
-        self.kernels = kernels
-        self.kernel_options = kernel_options
-        self.Y_metadata = Y_metadata
-        self.mean_function = mean_function
-        self.method = method
 
     def fit(self, X, y, **opt_kws):
         """Fit the model according to the given training data
@@ -133,6 +126,9 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
 
         if isinstance(self.kernels, str):
             self.kernels = [self.kernels]
+
+        if isinstance(self.kernel_options, dict):
+            self.kernel_options = [self.kernel_options]
 
         kernels = [getattr(gpy_kern, kern) for kern in self.kernels]
         input_dim = {'input_dim': self.n_features_}

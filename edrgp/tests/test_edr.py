@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from copy import deepcopy
 from edrgp.gp_model.regression import GaussianProcessRegressor
+from edrgp.gp_model.regression import SparseGaussianProcessRegressor
 from edrgp.edr import EffectiveDimensionalityReduction
 from edrgp.datasets import (get_gaussian_inputs,
                             get_tanh_targets,
@@ -10,9 +11,10 @@ from edrgp.datasets import (get_gaussian_inputs,
 from sklearn.feature_selection import mutual_info_regression
 from sklearn.decomposition import PCA, SparsePCA
 from sklearn.preprocessing import StandardScaler
-from edrgp.utils import CustomPCA
+from edrgp.utils import SVDTransformer
 from edrgp.utils import discrepancy
 from scipy.sparse import random as random_sparse
+import GPy
 
 
 def get_2d_data(mean=None):
@@ -27,11 +29,30 @@ def get_2d_data(mean=None):
     return X, y
 
 
+def test_sparse_regression():
+    np.random.seed(101)
+    N = 50
+    noise_var = 0.05
+
+    X = np.linspace(0,10,50)[:,None]
+    k = GPy.kern.RBF(1)
+    y = np.random.multivariate_normal(
+            np.zeros(N),k.K(X)+np.eye(N)*np.sqrt(noise_var)).reshape(-1,1)
+
+    gp = GaussianProcessRegressor()
+    gp.fit(X, y)
+
+    sgp = SparseGaussianProcessRegressor(num_inducing=12)
+    sgp.fit(X, y)
+
+    assert abs(gp.estimator_.log_likelihood() - sgp.estimator_.log_likelihood()[0][0]) < 0.5 
+
+
 @pytest.mark.parametrize("mean", [[0, 0], [10, -10]])
 def test_mi(mean):
     X, y = get_2d_data(mean)
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1,
+                                           SVDTransformer(), n_components=1,
                                            normalize=True)
     edr.fit(X, y)
     mi = mutual_info_regression(edr.transform(X), y)[0]
@@ -42,7 +63,7 @@ def test_mi(mean):
 def test_translation(normalize):
     X, y = get_2d_data(mean=[10, -10])
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1,
+                                           SVDTransformer(), n_components=1,
                                            normalize=normalize)
     edr.fit(X, y)
     components_shift = edr.components_
@@ -61,7 +82,7 @@ def test_preprocess(mean):
     y = get_tanh_targets(X, [0.5, 0.5, 0, 0])
 
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1,
+                                           SVDTransformer(), n_components=1,
                                            normalize=True,
                                            preprocessor=PCA(n_components=2))
     edr.fit(X, y)
@@ -72,7 +93,7 @@ def test_preprocess(mean):
 
     X -= X.mean(0)
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), n_components=1,
+                                           SVDTransformer(), n_components=1,
                                            normalize=True,
                                            preprocessor=PCA(n_components=2))
     edr.fit(X, y)
@@ -85,16 +106,17 @@ def test_scaling(mean):
     X, y = get_2d_data(mean)
     # EDR with scaling
     edr_sc = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                              CustomPCA(), normalize=True)
+                                              SVDTransformer(), normalize=True)
     edr_sc.fit(X, y)
     x1 = edr_sc.transform(X-np.mean(X, axis=0))
     # EDR without scaling
     edr = EffectiveDimensionalityReduction(GaussianProcessRegressor(),
-                                           CustomPCA(), normalize=False)
+                                           SVDTransformer(), normalize=False)
     X_scaled = StandardScaler().fit_transform(X)
     x2 = edr.fit_transform(X_scaled, y)
 
     assert np.allclose(x1, x2)
+
 
 
 # @pytest.mark.parametrize("n_components,step", [(3, 1), (None, 0.99)])
@@ -105,7 +127,7 @@ def test_scaling(mean):
 
 #     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
 #     edr = EffectiveDimensionalityReduction(gp_model,
-#                                            CustomPCA(),
+#                                            SVDTransformer(),
 #                                            n_components=n_components,
 #                                            step=step, normalize=False)
 #     edr.fit(X, y)
@@ -124,7 +146,7 @@ def test_scaling(mean):
 
 #     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
 #     edr = EffectiveDimensionalityReduction(gp_model,
-#                                            CustomPCA(),
+#                                            SVDTransformer(),
 #                                            step=2,
 #                                            n_components=3,
 #                                            normalize=normalize,
@@ -147,7 +169,7 @@ def test_scaling(mean):
 
 #     gp_model = GaussianProcessRegressor(['RBF'], [{'ARD': True}])
 #     edr = EffectiveDimensionalityReduction(gp_model,
-#                                            CustomPCA(),
+#                                            SVDTransformer(),
 #                                            step=0.99,
 #                                            normalize=normalize,
 #                                            preprocessor=preprocessor)

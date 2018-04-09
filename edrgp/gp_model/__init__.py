@@ -1,5 +1,9 @@
-from .classification import GaussianProcessClassifier
-from .regression import GaussianProcessRegressor
+from .classification import (GaussianProcessClassifier,
+                             SparseGaussianProcessClassifier)
+from .regression import (GaussianProcessRegressor,
+                         SparseGaussianProcessRegressor)
 
 __all__ = ['GaussianProcessClassifier',
-           'GaussianProcessRegressor']
+           'GaussianProcessRegressor',
+           'SparseGaussianProcessClassifier',
+           'SparseGaussianProcessRegressor']
