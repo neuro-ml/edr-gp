@@ -80,7 +80,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         n_components = ``refit_transformer.n_components``
     """
 
-    def __init__(self, estimator=None, dr_transformer=None, n_components=None, 
+    def __init__(self, estimator=None, dr_transformer=None, n_components=None,
                  step=None, normalize=True, preprocessor=None):
         self.normalize = normalize
         self.preprocessor = preprocessor
@@ -243,7 +243,8 @@ class EffectiveDimensionalityReduction(BaseEDR):
         if refitted:
             check_is_fitted(self, ['refit_transformer_', 'refit_components_'])
             return np.dot(X, self.refit_components_.T)
-        if hasattr(self, '_gradients_') and self._gradients_ is not None:
+        if (hasattr(self, '_original_space_gradients_')and
+                self._original_space_gradients_ is not None):
             components = self.components_
         else:
             components = (self.components_ if self.preprocessor is None else

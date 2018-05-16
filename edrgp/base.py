@@ -1,10 +1,12 @@
 """Base class for Effective Dimensionality Reduction"""
 
 import numpy as np
+import warnings
 from copy import deepcopy
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted
+from sklearn.preprocessing import normalize
 from .utils import subspace_variance_ratio
 
 
@@ -95,10 +97,10 @@ class BaseEDR(BaseEstimator, TransformerMixin):
             Returns self.
         """
         if self.estimator is None:
-        	raise ValueError("Estimator should be speciified")
+            raise ValueError("Estimator should be speciified")
 
         if self.dr_transformer is None:
-        	raise ValueError("dr_transformer should be specified")
+            raise ValueError("dr_transformer should be specified")
 
         if self.n_components is None:
             self.n_components_ = X.shape[1]
@@ -123,7 +125,7 @@ class BaseEDR(BaseEstimator, TransformerMixin):
             mes = "Step should be None or int > 0 or float from 0 to 1"
             raise ValueError(mes)
 
-        self._gradients_ = None
+        self._original_space_gradients_ = None
         self.components_ = None
         self.continue_iteration = True
         self.num_iter = 0
@@ -137,7 +139,7 @@ class BaseEDR(BaseEstimator, TransformerMixin):
         self._last_fit(X_proj, y, **opt_kws)
         return self
 
-    def refit(self, refit_transformer):
+    def refit(self, refit_transformer, rows=None):
         """Compute new components using gradients estimated during fit.
 
         It uses gradients estimated during fit and finds the right subspace 
@@ -150,22 +152,38 @@ class BaseEDR(BaseEstimator, TransformerMixin):
             Transformer to fit with gradients estimated on fit.
             It should have attribute `components_` after fit.
 
+        rows : array-like
+            Indices of objects for which transform will be applied.
+
         Returns
         -------
         self : object
             Returns self.
         """
         check_is_fitted(self, 'components_')
+        if rows is None:
+            rows = slice(None)
         self.refit_transformer_ = clone(refit_transformer)
-        self.refit_transformer_.fit(self._gradients_)
+        self.refit_transformer_.fit(self._original_space_gradients_[rows, :])
         self._check_transformer(self.refit_transformer_)
         self.refit_components_ = deepcopy(self.refit_transformer_.components_)
-        self.refit_components_ = (
-            self.refit_components_/np.linalg.norm(self.refit_components_,
-                                                  axis=1).reshape(-1, 1))
+
+        self.refit_components_ = normalize(self.refit_components_, axis=1)
+        nonzero_indices = np.nonzero(np.linalg.norm(self.refit_components_,
+                                                    axis=1))[0]
+        zero_components = list(
+            set(range(self.refit_components_.shape[0])) - set(nonzero_indices))
+        if zero_components:
+            mes = ('Components with numbers {} will be droped because they '
+                   'contains only zeros: {}').format(zero_components,
+                                                     self.refit_components_)
+            warnings.warn(mes, RuntimeWarning)
+        self.refit_components_ = np.delete(
+            self.refit_components_, zero_components, axis=0)
+
         (self.refit_subspace_variance_,
          self.refit_subspace_variance_ratio_) = subspace_variance_ratio(
-            self._gradients_,
+            self._first_gradients_[rows, :],
             self.refit_components_.T)
         return self
 
@@ -190,12 +208,12 @@ class BaseEDR(BaseEstimator, TransformerMixin):
         """
         self._fit_estimator(X, y, **opt_kws)
         check_is_fitted(self, 'estimator_')
-        grad = self._get_estimator_gradients(X)
-        self.subspace_gradients_ = grad
-        self._gradients_ = np.dot(grad, self.components_)
+        self.subspace_gradients_ = self._get_estimator_gradients(X)
+        self._original_space_gradients_ = np.dot(self.subspace_gradients_, 
+        	                                     self.components_)
         (self.subspace_variance_,
          self.subspace_variance_ratio_) = subspace_variance_ratio(
-            self._gradients_,
+            self._first_gradients_,
             self.components_.T)
         return self
 
@@ -219,6 +237,8 @@ class BaseEDR(BaseEstimator, TransformerMixin):
         if y is not None:
             self.estimator_ = clone(self.estimator)
             self.estimator_.fit(X, y, **opt_kws)
+            if self.num_iter == 0:
+            	self.first_estimator_ = clone(self.estimator_) 
         elif not hasattr(self, 'estimator_'):
             self.estimator_ = clone(self.estimator)
             # we will check later that the estimator is properly fitted
@@ -242,6 +262,8 @@ class BaseEDR(BaseEstimator, TransformerMixin):
         check_is_fitted(self, 'estimator_')
 
         grad = self._get_estimator_gradients(X)
+        if self.num_iter == 0:
+        	self._first_gradients_ = grad
 
         self.dr_transformer_ = clone(self.dr_transformer)
         self.dr_transformer_.fit(grad)

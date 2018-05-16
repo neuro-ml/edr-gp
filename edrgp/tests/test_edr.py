@@ -161,7 +161,7 @@ def test_scaling(mean):
 # @pytest.mark.parametrize("normalize,preprocessor",
 #                          [(False, None),
 #                           (True, None),
-#                           (True, PCA(n_components=2))])
+#                           (True, PCA(n_components=5))])
 # def test_refit(normalize, preprocessor):
 #     X = get_beta_inputs(300, 10)
 #     B = np.linalg.qr(random_sparse(10, 3, density=0.3, random_state=0).A)[0]
