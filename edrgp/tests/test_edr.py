@@ -34,10 +34,10 @@ def test_sparse_regression():
     N = 50
     noise_var = 0.05
 
-    X = np.linspace(0,10,50)[:,None]
+    X = np.linspace(0, 10, 50)[:, None]
     k = GPy.kern.RBF(1)
     y = np.random.multivariate_normal(
-            np.zeros(N),k.K(X)+np.eye(N)*np.sqrt(noise_var)).reshape(-1,1)
+        np.zeros(N), k.K(X)+np.eye(N)*np.sqrt(noise_var)).reshape(-1, 1)
 
     gp = GaussianProcessRegressor()
     gp.fit(X, y)
@@ -45,7 +45,8 @@ def test_sparse_regression():
     sgp = SparseGaussianProcessRegressor(num_inducing=12)
     sgp.fit(X, y)
 
-    assert abs(gp.estimator_.log_likelihood() - sgp.estimator_.log_likelihood()[0][0]) < 0.5 
+    assert abs(gp.estimator_.log_likelihood() -
+               sgp.estimator_.log_likelihood()[0][0]) < 0.5
 
 
 @pytest.mark.parametrize("mean", [[0, 0], [10, -10]])
@@ -118,7 +119,6 @@ def test_scaling(mean):
     assert np.allclose(x1, x2)
 
 
-
 # @pytest.mark.parametrize("n_components,step", [(3, 1), (None, 0.99)])
 # def test_iterative(n_components, step):
 #     X = get_beta_inputs(300, 10)
@@ -133,6 +133,7 @@ def test_scaling(mean):
 #     edr.fit(X, y)
 #     assert discrepancy(B, edr.components_.T) < 1e-1
 #     assert edr.components_.shape[0] == 3
+#     assert np.all(edr.subspace_variance_ratio_ == np.sort(edr.subspace_variance_ratio_)[::-1])
 
 
 # @pytest.mark.parametrize("normalize,preprocessor",
