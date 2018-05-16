@@ -209,8 +209,8 @@ class BaseEDR(BaseEstimator, TransformerMixin):
         self._fit_estimator(X, y, **opt_kws)
         check_is_fitted(self, 'estimator_')
         self.subspace_gradients_ = self._get_estimator_gradients(X)
-        self._original_space_gradients_ = np.dot(self.subspace_gradients_, 
-        	                                     self.components_)
+        self._original_space_gradients_ = np.dot(self.subspace_gradients_,
+                                                 self.components_)
         (self.subspace_variance_,
          self.subspace_variance_ratio_) = subspace_variance_ratio(
             self._first_gradients_,
@@ -238,7 +238,7 @@ class BaseEDR(BaseEstimator, TransformerMixin):
             self.estimator_ = clone(self.estimator)
             self.estimator_.fit(X, y, **opt_kws)
             if self.num_iter == 0:
-            	self.first_estimator_ = clone(self.estimator_) 
+                self.first_estimator_ = clone(self.estimator_)
         elif not hasattr(self, 'estimator_'):
             self.estimator_ = clone(self.estimator)
             # we will check later that the estimator is properly fitted
@@ -263,7 +263,7 @@ class BaseEDR(BaseEstimator, TransformerMixin):
 
         grad = self._get_estimator_gradients(X)
         if self.num_iter == 0:
-        	self._first_gradients_ = grad
+            self._first_gradients_ = grad
 
         self.dr_transformer_ = clone(self.dr_transformer)
         self.dr_transformer_.fit(grad)
@@ -281,9 +281,13 @@ class BaseEDR(BaseEstimator, TransformerMixin):
             if n_components == self.n_components_:
                 self.continue_iteration = False
 
-        components = components[:n_components, :]
+        # components = components[:n_components, :]
         self.components_ = (components if self.components_ is None else
                             np.dot(components, self.components_))
+        _, var_ratio = subspace_variance_ratio(self._first_gradients_,
+                                               self.components_.T)
+        best_components = np.argsort(var_ratio)[-n_components:][::-1]
+        self.components_ = self.components_[best_components, :]
         return self
 
     def get_estimator_gradients(self, X):
