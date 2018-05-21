@@ -74,8 +74,8 @@ def discrepancy(B, V):
     -------
     """
     return np.linalg.norm(np.dot(B.dot(B.T),
-                                 (np.eye(B.shape[0]) - 
-                                                    V.dot(V.T)))) / B.shape[1]
+                                 (np.eye(B.shape[0]) -
+                                  V.dot(V.T)))) / B.shape[1]
 
 
 class SVDTransformer(BaseEstimator, TransformerMixin):

@@ -80,7 +80,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         n_components = ``refit_transformer.n_components``
     """
 
-    def __init__(self, estimator=None, dr_transformer=None, n_components=None, 
+    def __init__(self, estimator=None, dr_transformer=None, n_components=None,
                  step=None, normalize=True, preprocessor=None):
         self.normalize = normalize
         self.preprocessor = preprocessor
@@ -106,12 +106,36 @@ class EffectiveDimensionalityReduction(BaseEDR):
         X = self._preprocessing_fit(X)
         super(EffectiveDimensionalityReduction,
               self).fit(X, y, **opt_kws)
-        if self.normalize is True:
+        if self.normalize:
             self.components_ = np.dot(self.components_, self._reverse_scaling_)
-            if hasattr(self, 'refit_components_'):
-                self.refit_components_ = np.dot(self.refit_components_,
-                                                self._reverse_scaling_)
         return self
+
+    def refit(self, refit_transformer, rows=None):
+        """Compute new components using gradients estimated during fit.
+
+        It uses gradients estimated during fit and finds the right subspace 
+        for them using `refit_transformer`. To transform data with 
+        found components use `transform` with `refitted=True`
+
+        Parameters
+        ----------
+        refit_transformer : object
+            Transformer to fit with gradients estimated on fit.
+            It should have attribute `components_` after fit.
+
+        rows : array-like
+            Indices of objects for which transform will be applied.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        super(EffectiveDimensionalityReduction, self).refit(refit_transformer,
+                                                            rows)
+        if hasattr(self, 'refit_components_') and self.normalize:
+            self.refit_components_ = np.dot(self.refit_components_,
+                                            self._reverse_scaling_)
 
     def _preprocessing_fit(self, X, transform=True):
         """Preprocess X with ``StandardScaler`` and `preprocessor`
@@ -238,12 +262,30 @@ class EffectiveDimensionalityReduction(BaseEDR):
         return importances_
 
     def transform(self, X, refitted=False):
+        """Apply dimensionality reduction on X.
+
+        X is projected on the components previous extracted
+        from a training set.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            New data, where n_samples in the number of samples
+            and n_features is the number of features.
+        refitted : bool (False)
+            Whether to transform using refit_transformer components.
+            May be set to `True` only if `refit` was applied before
+        Returns
+        -------
+        X_new : ndarray, shape (n_samples, n_components)
+        """
         check_is_fitted(self, 'components_')
         X = check_array(X)
         if refitted:
             check_is_fitted(self, ['refit_transformer_', 'refit_components_'])
             return np.dot(X, self.refit_components_.T)
-        if hasattr(self, '_gradients_') and self._gradients_ is not None:
+        if (hasattr(self, '_original_space_gradients_')and
+                self._original_space_gradients_ is not None):
             components = self.components_
         else:
             components = (self.components_ if self.preprocessor is None else
