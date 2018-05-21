@@ -169,14 +169,15 @@ class BaseEDR(BaseEstimator, TransformerMixin):
         self.refit_components_ = deepcopy(self.refit_transformer_.components_)
 
         self.refit_components_ = normalize(self.refit_components_, axis=1)
+        
+        # Remove zero components
         nonzero_indices = np.nonzero(np.linalg.norm(self.refit_components_,
                                                     axis=1))[0]
         zero_components = list(
             set(range(self.refit_components_.shape[0])) - set(nonzero_indices))
         if zero_components:
             mes = ('Components with numbers {} will be droped because they '
-                   'contains only zeros: {}').format(zero_components,
-                                                     self.refit_components_)
+                   'contains only zeros').format(zero_components)
             warnings.warn(mes, RuntimeWarning)
         self.refit_components_ = np.delete(
             self.refit_components_, zero_components, axis=0)
