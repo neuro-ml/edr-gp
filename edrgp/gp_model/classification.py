@@ -144,7 +144,7 @@ class SparseGaussianProcessClassifier(_BaseGP, ClassifierMixin):
         self.method = method
 
     def _get_model(self, X, y, kernel):
-        _SGPClassification(X, y, likelihood=self.likelihood, kernel=kernel,
+        return _SGPClassification(X, y, likelihood=self.likelihood, kernel=kernel,
                            Z=self.Z, num_inducing=self.num_inducing,
                            Y_metadata=self.Y_metadata)
 
