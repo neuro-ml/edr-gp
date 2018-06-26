@@ -7,6 +7,7 @@ from sklearn.utils.multiclass import check_classification_targets
 from sklearn.base import BaseEstimator
 from copy import deepcopy
 from GPy import kern as gpy_kern
+from GPy import load as load_gp
 from abc import ABCMeta, abstractmethod
 import six
 
@@ -219,3 +220,38 @@ class _BaseGP(six.with_metaclass(ABCMeta, BaseEstimator)):
         """
         X = self._check_predict(X)
         return self.estimator_.predictive_gradients(X)[0][:, :, 0]
+
+    def save(self, model_path):
+        """Save model to `model_path` file with '.pickle' extension
+
+        Parameters
+        ----------
+        model_path: str
+            Path to which model will be dumped. The extension '.pickle'
+            will be add to path automatically
+
+        Returns
+        -------
+        None
+        """
+        if not model_path.endswith('.pickle'):
+            model_path += '.pickle'
+        self.estimator_.pickle(model_path)
+
+
+    def load(self, model_path):
+        """Load model from `model_path`
+
+        Parameters
+        ----------
+        model_path: str
+            Path to which model was dumped. The extension '.pickle'
+            will be add to path automatically.
+
+        Returns
+        -------
+        None
+        """
+        if not model_path.endswith('.pickle'):
+            model_path += '.pickle'
+        self.estimator_ = load_gp(model_path)

@@ -5,10 +5,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_array
 from sklearn.base import clone
 from sklearn.utils.validation import check_is_fitted
-from .base import BaseEDR
+from .base import IterativeEDR
 
 
-class EffectiveDimensionalityReduction(BaseEDR):
+class EffectiveDimensionalityReduction(IterativeEDR):
     """Effective dimensionality reduction class
 
     Parameters
@@ -103,11 +103,13 @@ class EffectiveDimensionalityReduction(BaseEDR):
         self : object
             Returns self.
         """
+        self.fitted = False
         X = self._preprocessing_fit(X)
         super(EffectiveDimensionalityReduction,
               self).fit(X, y, **opt_kws)
         if self.normalize:
             self.components_ = np.dot(self.components_, self._reverse_scaling_)
+        self.fitted = True
         return self
 
     def refit(self, refit_transformer, rows=None):
@@ -190,9 +192,6 @@ class EffectiveDimensionalityReduction(BaseEDR):
         if self.normalize is True:
             check_is_fitted(self, 'scaler_')
             X = self.scaler_.transform(X)
-        # if self.preprocessor is not None:
-        #     check_is_fitted(self, 'preprocessor_')
-        #     X = self.preprocessor_.transform(X)
             X = np.dot(X, self._scaling_)
         X = np.dot(X, self.components_.T)
         return X
@@ -211,8 +210,6 @@ class EffectiveDimensionalityReduction(BaseEDR):
             Calculated gradients.
         """
         X = check_array(X)
-        # X_transform = self.transform(X)
-        # subsp_grads = self.estimator_.predict_gradient(X_transform)
         return self._get_estimator_gradients(X, True)
 
     def _get_estimator_gradients(self, X, preprocessing_transform=False):
@@ -284,8 +281,7 @@ class EffectiveDimensionalityReduction(BaseEDR):
         if refitted:
             check_is_fitted(self, ['refit_transformer_', 'refit_components_'])
             return np.dot(X, self.refit_components_.T)
-        if (hasattr(self, '_original_space_gradients_')and
-                self._original_space_gradients_ is not None):
+        if self.fitted:
             components = self.components_
         else:
             components = (self.components_ if self.preprocessor is None else
