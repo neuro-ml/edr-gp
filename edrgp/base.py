@@ -133,7 +133,7 @@ class BaseEDR(BaseEstimator, TransformerMixin):
             self.estimator_ = clone(self.estimator)
             self.estimator_.fit(X, y, **opt_kws)
             if self.num_iter == 0:
-                self.first_estimator_ = clone(self.estimator_)
+                self.first_estimator_ = deepcopy(self.estimator_)
         elif not hasattr(self, 'estimator_'):
             self.estimator_ = clone(self.estimator)
             # we will check later that the estimator is properly fitted
